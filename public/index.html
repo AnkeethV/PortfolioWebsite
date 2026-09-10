@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Primary Meta Tags -->
+  <title>Ankeeth V — Senior Engineer & Data/AI Specialist</title>
+  <meta name="title" content="Ankeeth V — Senior Engineer & Data/AI Specialist">
+  <meta name="description" content="Personal portfolio and AI chatbot for Ankeeth V. Senior Engineer specializing in Data Analysis, Power BI, SQL, Systems Management, and Generative AI.">
+  <meta name="author" content="Ankeeth V">
+  <meta name="keywords" content="Ankeeth V, Data Analyst, Senior Engineer, Power BI, SQL, Generative AI, AI Chatbot, Portfolio, Bengaluru">
+
+  <!-- Open Graph / Facebook / LinkedIn -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Ankeeth V — Senior Engineer & Data/AI Specialist">
+  <meta property="og:description" content="Explore my data analytics portfolio, experience, projects, and chat with my AI assistant.">
+  <meta property="og:image" content="/assets/placeholder-avatar.svg">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Ankeeth V — Senior Engineer & Data/AI Specialist">
+  <meta name="twitter:description" content="Explore my data analytics portfolio, experience, projects, and chat with my AI assistant.">
+
+  <!-- Google Fonts Preconnect -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- Core Stylesheets -->
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/base.css">
+
+  <!-- Section Stylesheets -->
+  <link rel="stylesheet" href="/css/sections/nav.css">
+  <link rel="stylesheet" href="/css/sections/hero.css">
+  <link rel="stylesheet" href="/css/sections/highlights.css">
+  <link rel="stylesheet" href="/css/sections/experience.css">
+  <link rel="stylesheet" href="/css/sections/projects.css">
+  <link rel="stylesheet" href="/css/sections/skills.css">
+  <link rel="stylesheet" href="/css/sections/faq.css">
+  <link rel="stylesheet" href="/css/sections/contact.css">
+  <link rel="stylesheet" href="/css/sections/footer.css">
+  <link rel="stylesheet" href="/css/chat.css">
+
+  <!-- Inline Flash Prevention Script -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem('ankeeth_portfolio_theme');
+      if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+</head>
+<body>
+  <!-- Accessible Skip Navigation Link -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Global Sticky Navigation -->
+  <header id="navbar" class="navbar-header" role="banner">
+    <div class="container navbar-container">
+      <a href="#" class="brand-wordmark" aria-label="Ankeeth V Portfolio Home">
+        <span class="wordmark-serif">Ankeeth V</span>
+        <span class="wordmark-badge">Data & AI</span>
+      </a>
+
+      <!-- Desktop Navigation Links -->
+      <nav class="nav-links-wrapper" aria-label="Primary Navigation">
+        <ul class="nav-links-list">
+          <li><a href="#hero" class="nav-link active">About</a></li>
+          <li><a href="#experience" class="nav-link">Experience</a></li>
+          <li><a href="#projects" class="nav-link">Projects</a></li>
+          <li><a href="#skills" class="nav-link">Skills</a></li>
+          <li><a href="#faq" class="nav-link">FAQ</a></li>
+          <li><a href="#contact" class="nav-link">Contact</a></li>
+        </ul>
+      </nav>
+
+      <!-- Nav Actions (Theme Toggle & Resume CTA) -->
+      <div class="nav-actions">
+        <!-- Theme Toggle Button -->
+        <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle light and dark theme" title="Toggle theme">
+          <!-- Sun Icon (shown in dark mode) -->
+          <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <!-- Moon Icon (shown in light mode) -->
+          <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+
+        <!-- View Resume Pill Button -->
+        <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" class="btn-pill btn-primary btn-sm resume-nav-btn">
+          <span>Resume</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+
+        <!-- Mobile Menu Toggle Button -->
+        <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Open mobile menu" aria-expanded="false">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main id="main-content">
+    <!-- 1. Hero Section -->
+    <section id="hero" class="section-padding hero-section" aria-label="Introduction">
+      <div class="container hero-container">
+        <div class="hero-text-col">
+          <div class="hero-pill-badge">
+            <span class="pulse-dot"></span>
+            <span>Available for Opportunities</span>
+          </div>
+          <h1 id="hero-title" class="hero-headline">Client-focused problem solver & data analyst.</h1>
+          <p id="hero-bio" class="hero-bio-lead">
+            Senior Engineer specializing in Data Analysis, BI Dashboards, SQL, and AI-assisted workflows. Combining analytical rigor with stakeholder management to solve complex operational challenges.
+          </p>
+          <div class="hero-cta-group">
+            <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" class="btn-pill btn-primary" id="hero-resume-btn">
+              <span>View Resume</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            </a>
+            <a href="#contact" class="btn-pill btn-secondary">
+              <span>Get in Touch</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="hero-media-col">
+          <div class="hero-photo-wrapper">
+            <img id="hero-photo" src="/assets/placeholder-avatar.svg" alt="Photo of Ankeeth V" width="400" height="400" loading="eager">
+            <div class="hero-photo-badge">
+              <span class="badge-icon">📍</span>
+              <span id="hero-location" class="badge-text">Bengaluru, India</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Highlights / Contrast Band -->
+    <section id="highlights" class="highlights-contrast-band" aria-label="Key Achievements">
+      <div class="container">
+        <div class="highlights-grid">
+          <!-- Stat 1 -->
+          <div class="stat-badge-card">
+            <div class="scalloped-seal-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-number">5+ Years</span>
+              <span class="stat-label">Systems, Infrastructure & Analytics</span>
+            </div>
+          </div>
+
+          <!-- Stat 2 -->
+          <div class="stat-badge-card">
+            <div class="scalloped-seal-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-number">85%</span>
+              <span class="stat-label">Reduction in Repeated Issue Volume</span>
+            </div>
+          </div>
+
+          <!-- Stat 3 -->
+          <div class="stat-badge-card">
+            <div class="scalloped-seal-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-number">SQL • Power BI</span>
+              <span class="stat-label">Analytics & AI-Assisted Workflows</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Experience Section -->
+    <section id="experience" class="section-padding folded-corner-section" aria-label="Work Experience">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tagline">Career Timeline</span>
+          <h2>Professional Experience</h2>
+        </div>
+        <div id="experience-list" class="experience-timeline">
+          <!-- Populated dynamically via JS -->
+          <div class="loading-placeholder">Loading career history...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Projects Section -->
+    <section id="projects" class="section-padding" aria-label="Projects">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tagline">Case Studies</span>
+          <h2>Featured Projects</h2>
+        </div>
+        <div id="projects-grid" class="projects-grid">
+          <!-- Populated dynamically via JS -->
+          <div class="loading-placeholder">Loading projects...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Skills Section -->
+    <section id="skills" class="section-padding folded-corner-section" aria-label="Skills">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tagline">Capabilities</span>
+          <h2>Skills & Expertise</h2>
+        </div>
+        <div id="skills-container" class="skills-grid grid-3">
+          <!-- Populated dynamically via JS -->
+          <div class="loading-placeholder">Loading skills...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. FAQ Section -->
+    <section id="faq" class="section-padding" aria-label="Frequently Asked Questions">
+      <div class="container">
+        <div class="faq-two-col">
+          <div class="faq-col-left">
+            <div class="section-header">
+              <span class="section-tagline">Common Inquiries</span>
+              <h2>Frequently Asked Questions</h2>
+            </div>
+            <div id="faq-accordion" class="faq-accordion">
+              <!-- Populated dynamically via JS -->
+              <div class="loading-placeholder">Loading FAQ items...</div>
+            </div>
+          </div>
+          <div class="faq-col-right">
+            <div class="faq-card-banner">
+              <div class="banner-icon">💬</div>
+              <h3 class="banner-title">Have a unique question?</h3>
+              <p class="banner-desc">Ask my embedded AI chatbot anything about my background, or connect with me directly.</p>
+              <a href="#contact" class="btn-pill btn-primary btn-sm">Get in Touch</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. Contact Section -->
+    <section id="contact" class="contact-accent-band" aria-label="Contact Ankeeth V">
+      <div class="container">
+        <div class="contact-split-grid">
+          <div class="contact-info-col">
+            <span class="section-tagline" style="color: #1A1A1A;">Let's Connect</span>
+            <h2 style="color: #1A1A1A;">Ready to talk data, operations, or AI?</h2>
+            <p style="color: #333333; margin-top: 1rem; font-size: 1.1rem;">
+              Whether you're looking for a Data Analyst, have questions about my projects, or want to discuss opportunities, I'd love to connect.
+            </p>
+
+            <div class="contact-direct-links">
+              <a id="contact-email-link" href="mailto:ankeeth.v@gmail.com" class="direct-link-item">
+                <span class="icon">✉️</span>
+                <span id="contact-email-text">ankeeth.v@gmail.com</span>
+              </a>
+              <a id="contact-linkedin-link" href="https://www.linkedin.com/in/ankeeth-v-" target="_blank" rel="noopener noreferrer" class="direct-link-item">
+                <span class="icon">🔗</span>
+                <span>LinkedIn Profile</span>
+              </a>
+              <a id="contact-github-link" href="https://github.com/AnkeethV" target="_blank" rel="noopener noreferrer" class="direct-link-item">
+                <span class="icon">💻</span>
+                <span>GitHub Profile</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="contact-form-col">
+            <div class="contact-form-card">
+              <h3 class="form-heading">Send a Message</h3>
+              <form id="contact-form" novalidate>
+                <!-- Anti-spam Honeypot Field -->
+                <input type="text" name="_gotcha" class="honeypot-field" tabindex="-1" autocomplete="off" aria-hidden="true" style="display: none;">
+
+                <div class="form-group">
+                  <label for="contact-name">Your Name</label>
+                  <input type="text" id="contact-name" name="name" placeholder="Jane Smith" required>
+                  <span class="field-error" id="name-error"></span>
+                </div>
+
+                <div class="form-group">
+                  <label for="contact-email">Email Address</label>
+                  <input type="email" id="contact-email" name="email" placeholder="jane@example.com" required>
+                  <span class="field-error" id="email-error"></span>
+                </div>
+
+                <div class="form-group">
+                  <label for="contact-message">Message</label>
+                  <textarea id="contact-message" name="message" rows="4" placeholder="Hi Ankeeth, I'd like to discuss a role..." required></textarea>
+                  <span class="field-error" id="message-error"></span>
+                </div>
+
+                <button type="submit" id="contact-submit-btn" class="btn-pill btn-dark form-submit-btn">
+                  <span>Send Message</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+
+                <div id="form-status-message" class="form-status-alert" style="display: none;" role="alert"></div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Global Footer -->
+  <footer id="footer" class="site-footer">
+    <div class="container footer-container">
+      <div class="footer-wordmark-col">
+        <span class="footer-name">Ankeeth V</span>
+        <p class="footer-tagline">Senior Engineer & Data/AI Specialist</p>
+      </div>
+      <div class="footer-links-col">
+        <a href="#hero">About</a>
+        <a href="#experience">Experience</a>
+        <a href="#projects">Projects</a>
+        <a href="/resume.pdf" target="_blank" rel="noopener noreferrer">Resume</a>
+        <a href="/admin" class="admin-hidden-link">Admin</a>
+      </div>
+      <div class="footer-copy-col">
+        <p>© 2026 Ankeeth V. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Interactive Project Detail Modal -->
+  <div id="project-modal" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" style="display: none;">
+    <div class="modal-card">
+      <button id="modal-close-btn" class="modal-close-btn" aria-label="Close project modal">✕</button>
+      <div class="modal-body" id="modal-content-root">
+        <!-- Injected via modal.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Chatbot Widget Root Container -->
+  <div id="chat-widget-root"></div>
+
+  <!-- Core Application Script -->
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

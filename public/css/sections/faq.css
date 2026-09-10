@@ -1,0 +1,121 @@
+/* ==========================================================================
+   FAQ Section Styles
+   Accordion, 2-column split, smooth expand/collapse
+   ========================================================================== */
+
+.faq-two-col {
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr;
+  gap: var(--spacing-3xl);
+  align-items: flex-start;
+}
+
+.faq-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.faq-item {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all var(--transition-normal);
+}
+
+.faq-item.open {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.faq-question-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg) var(--spacing-xl);
+  background: transparent;
+  border: none;
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+  gap: var(--spacing-md);
+}
+
+.faq-toggle-icon {
+  font-size: 1.35rem;
+  color: var(--color-accent-hover);
+  transition: transform var(--transition-normal);
+  line-height: 1;
+}
+
+[data-theme="dark"] .faq-toggle-icon {
+  color: var(--color-accent);
+}
+
+.faq-item.open .faq-toggle-icon {
+  transform: rotate(45deg);
+}
+
+.faq-answer-panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--transition-normal), padding var(--transition-normal);
+}
+
+.faq-item.open .faq-answer-panel {
+  max-height: 400px;
+}
+
+.faq-answer-content {
+  padding: 0 var(--spacing-xl) var(--spacing-xl) var(--spacing-xl);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+/* Right Column: Supporting Callout Banner */
+.faq-card-banner {
+  background-color: var(--color-contrast-surface);
+  color: var(--color-contrast-text);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-2xl);
+  position: sticky;
+  top: 96px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-lg);
+}
+
+.banner-icon {
+  font-size: 2.2rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.banner-title {
+  font-family: var(--font-serif);
+  font-size: var(--text-2xl);
+  color: #F4F3EF;
+  margin-bottom: var(--spacing-sm);
+}
+
+.banner-desc {
+  font-size: var(--text-sm);
+  color: #A8A69E;
+  margin-bottom: var(--spacing-xl);
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  .faq-two-col {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-2xl);
+  }
+
+  .faq-card-banner {
+    position: static;
+  }
+}

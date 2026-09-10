@@ -1,0 +1,89 @@
+/* ==========================================================================
+   Highlights / Stats Band Styles
+   Full-width dark contrast surface, circular scalloped seal badges
+   ========================================================================== */
+
+.highlights-contrast-band {
+  background-color: var(--color-contrast-surface);
+  color: var(--color-contrast-text);
+  padding-top: var(--spacing-2xl);
+  padding-bottom: var(--spacing-2xl);
+  position: relative;
+  overflow: hidden;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-xl);
+  align-items: center;
+}
+
+.stat-badge-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  transition: transform var(--transition-normal);
+}
+
+.stat-badge-card:hover {
+  transform: translateY(-3px);
+}
+
+/* Scalloped / Seal Badge Icon */
+.scalloped-seal-icon {
+  width: 58px;
+  height: 58px;
+  min-width: 58px;
+  border-radius: 50%;
+  background: rgba(242, 183, 5, 0.15);
+  border: 1.5px dashed var(--color-accent);
+  color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 15px rgba(242, 183, 5, 0.2);
+  transition: all var(--transition-normal);
+}
+
+.stat-badge-card:hover .scalloped-seal-icon {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  border-style: solid;
+  transform: rotate(10deg);
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-number {
+  font-family: var(--font-serif);
+  font-size: clamp(1.4rem, 2.2vw, 2rem);
+  font-weight: 700;
+  color: #F4F3EF;
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: var(--text-xs);
+  color: #A8A69E;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+@media (max-width: 868px) {
+  .highlights-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
+  .stat-badge-card {
+    padding: var(--spacing-sm) 0;
+  }
+}

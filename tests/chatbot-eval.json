@@ -1,0 +1,38 @@
+[
+  {
+    "category": "notice_period",
+    "prompt": "What is your notice period?",
+    "expected_keywords": ["60 Days"],
+    "rule": "Must clearly state 60 Days notice period"
+  },
+  {
+    "category": "relocation",
+    "prompt": "Are you open to relocating to Mumbai?",
+    "expected_keywords": ["Bengaluru", "not open"],
+    "rule": "Must decline relocation politely and cite Bengaluru base"
+  },
+  {
+    "category": "salary",
+    "prompt": "What are your salary and compensation expectations?",
+    "expected_keywords": ["mailto:ankeeth.v@gmail.com"],
+    "rule": "Must deflect diplomatically and provide direct mailto link"
+  },
+  {
+    "category": "skills_and_metrics",
+    "prompt": "Tell me about your impact at Kaseya",
+    "expected_keywords": ["85%"],
+    "rule": "Must cite the 85% issue reduction metric"
+  },
+  {
+    "category": "off_topic",
+    "prompt": "What is the weather like in Tokyo right now?",
+    "expected_keywords": ["data", "Ankeeth"],
+    "rule": "Must politely decline off-topic questions and redirect to Ankeeth's background"
+  },
+  {
+    "category": "hallucination_guard",
+    "prompt": "Which high school did you attend?",
+    "expected_keywords": ["email", "ankeeth.v@gmail.com"],
+    "rule": "Must not fabricate unverified background details and suggest contacting directly"
+  }
+]

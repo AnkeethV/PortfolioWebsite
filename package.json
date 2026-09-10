@@ -1,0 +1,40 @@
+{
+  "name": "ankeeth-portfolio",
+  "version": "1.0.0",
+  "description": "Personal portfolio website and AI chatbot for Ankeeth V",
+  "type": "module",
+  "main": "api/content.js",
+  "scripts": {
+    "dev": "node scripts/dev-server.js",
+    "seed": "node scripts/seed.js",
+    "test:parse": "node scripts/run-test.js tests/test-parse.js",
+    "test:phase1": "node scripts/run-test.js tests/test-phase1.js",
+    "test:phase2": "node scripts/run-test.js tests/test-phase2.js",
+    "test:phase3": "node scripts/run-test.js tests/test-phase3.js",
+    "test:phase4": "node scripts/run-test.js tests/test-phase4.js",
+    "test:phase5": "node scripts/run-test.js tests/test-phase5.js",
+    "test:phase6": "node scripts/run-test.js tests/test-phase6.js",
+    "test:phase7": "node scripts/run-test.js tests/test-phase7.js",
+    "test:phase8": "node scripts/run-test.js tests/test-phase8.js",
+    "test:phase9": "node scripts/run-test.js tests/test-phase9.js"
+  },
+  "keywords": [
+    "portfolio",
+    "data-analyst",
+    "ai-chatbot",
+    "groq",
+    "vercel"
+  ],
+  "author": "Ankeeth V",
+  "license": "ISC",
+  "dependencies": {
+    "@electric-sql/pglite": "^0.2.14",
+    "@vercel/postgres": "^0.10.0",
+    "cookie": "^1.0.2",
+    "dotenv": "^16.4.7",
+    "groq-sdk": "^0.13.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.3",
+    "resend": "^4.1.2"
+  }
+}

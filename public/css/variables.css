@@ -1,0 +1,96 @@
+/* ==========================================================================
+   Design Tokens & CSS Variables
+   Portfolio Website for Ankeeth V
+   Editorial Warm-Minimal Design System
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Typography */
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Font Sizes */
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+  --text-3xl: 2rem;       /* 32px */
+  --text-4xl: 2.5rem;     /* 40px */
+  --text-hero: clamp(2.5rem, 5.5vw, 4.5rem);
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  --spacing-3xl: 5rem;
+  --max-width: 1200px;
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-pill: 9999px;
+
+  /* Transition Durations */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+  --transition-slow: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ----------------------------------------------------
+     LIGHT THEME (Default)
+     ---------------------------------------------------- */
+  --color-bg: #F4F3EF;                 /* Warm off-white / cream */
+  --color-surface: #FFFFFF;            /* Pure white card surface */
+  --color-surface-hover: #ECEAE4;
+  --color-contrast-surface: #2E2E2E;   /* Dark charcoal contrast band */
+  --color-contrast-text: #F4F3EF;
+  --color-text-primary: #1A1A1A;       /* Near-black primary text */
+  --color-text-secondary: #5A5852;     /* Muted neutral body */
+  --color-text-muted: #828078;
+  --color-accent: #F2B705;             /* Signature warm golden-yellow */
+  --color-accent-hover: #DDA300;
+  --color-accent-text: #1A1A1A;
+  --color-border: #E2E0D8;
+  --color-border-subtle: #ECEAE4;
+  --color-modal-backdrop: rgba(26, 26, 26, 0.6);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.08);
+  --shadow-accent: 0 4px 20px rgba(242, 183, 5, 0.35);
+}
+
+/* ----------------------------------------------------
+   DARK THEME
+   ---------------------------------------------------- */
+[data-theme="dark"] {
+  --color-bg: #1A1A1A;                 /* Dark charcoal background */
+  --color-surface: #242424;            /* Raised card surface */
+  --color-surface-hover: #2D2D2D;
+  --color-contrast-surface: #2E2E2E;   /* Charcoal contrast band */
+  --color-contrast-text: #F4F3EF;
+  --color-text-primary: #F4F3EF;       /* Cream primary text */
+  --color-text-secondary: #A8A69E;     /* Muted off-white body */
+  --color-text-muted: #727068;
+  --color-accent: #F2B705;             /* Signature warm golden-yellow (preserved) */
+  --color-accent-hover: #FDC72B;
+  --color-accent-text: #1A1A1A;
+  --color-border: #383838;
+  --color-border-subtle: #2C2C2C;
+  --color-modal-backdrop: rgba(0, 0, 0, 0.75);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --shadow-accent: 0 4px 24px rgba(242, 183, 5, 0.4);
+}

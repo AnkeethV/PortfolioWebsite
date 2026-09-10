@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Console — Ankeeth V</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+
+  <!-- ====================================================
+       1. Login View (Unauthenticated State)
+       ==================================================== -->
+  <main id="login-view" class="login-view">
+    <div class="login-card">
+      <h1 class="login-brand">Admin Console</h1>
+      <p class="login-subtitle">Ankeeth V Portfolio Management</p>
+
+      <div id="login-error" class="alert-banner alert-danger" role="alert"></div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label for="admin-password" class="form-label">Master Password</label>
+          <input
+            type="password"
+            id="admin-password"
+            class="form-input"
+            placeholder="Enter administrative password"
+            required
+            autocomplete="current-password"
+          >
+        </div>
+        <button type="submit" id="login-btn" class="btn-full">
+          Sign In
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <!-- ====================================================
+       2. Dashboard View (Authenticated State)
+       ==================================================== -->
+  <div id="dashboard-view" class="dashboard-view">
+    <!-- Top Header -->
+    <header class="admin-header">
+      <div class="admin-brand-group">
+        <span class="admin-wordmark">Ankeeth V</span>
+        <span class="admin-badge">Admin Console</span>
+      </div>
+      <div class="admin-actions">
+        <a href="/" target="_blank" rel="noopener noreferrer" class="btn-outline">
+          <span>View Live Site</span>
+          <span>↗</span>
+        </a>
+        <button id="logout-btn" class="btn-outline btn-danger-outline" type="button">
+          Log Out
+        </button>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="admin-tabs-bar" aria-label="Admin Navigation Tabs">
+      <button class="admin-tab-btn active" data-tab="personal-info">Personal Info</button>
+      <button class="admin-tab-btn" data-tab="experience">Experience</button>
+      <button class="admin-tab-btn" data-tab="projects">Projects</button>
+      <button class="admin-tab-btn" data-tab="skills">Skills</button>
+      <button class="admin-tab-btn" data-tab="faq">FAQ</button>
+    </nav>
+
+    <!-- Main Content Panels -->
+    <main class="admin-content-area">
+
+      <!-- Panel 1: Personal Info -->
+      <section id="panel-personal-info" class="tab-panel active">
+        <div class="panel-header">
+          <h2 class="panel-title">Personal Profile & Bio</h2>
+        </div>
+        <div class="panel-card">
+          <form id="personal-info-form">
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="p-name" class="form-label">Full Name</label>
+                <input type="text" id="p-name" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label for="p-title" class="form-label">Professional Title</label>
+                <input type="text" id="p-title" class="form-input" required>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="p-location" class="form-label">Location</label>
+                <input type="text" id="p-location" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label for="p-email" class="form-label">Email Address</label>
+                <input type="email" id="p-email" class="form-input" required>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="p-linkedin" class="form-label">LinkedIn URL</label>
+                <input type="url" id="p-linkedin" class="form-input">
+              </div>
+              <div class="form-group">
+                <label for="p-github" class="form-label">GitHub URL</label>
+                <input type="url" id="p-github" class="form-input">
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="p-resume" class="form-label">Resume URL (e.g. /resume.pdf)</label>
+                <input type="text" id="p-resume" class="form-input">
+              </div>
+              <div class="form-group">
+                <label for="p-photo" class="form-label">Photo URL</label>
+                <input type="text" id="p-photo" class="form-input">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="p-bio" class="form-label">Short Biography</label>
+              <textarea id="p-bio" class="form-textarea" rows="4" required></textarea>
+            </div>
+
+            <button type="submit" class="btn-full" style="max-width: 220px;">
+              Save Profile Changes
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Panel 2: Experience -->
+      <section id="panel-experience" class="tab-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Career Experience</h2>
+          <button type="button" id="btn-add-experience" class="btn-outline">
+            + Add Experience
+          </button>
+        </div>
+        <div id="experience-admin-list">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+
+      <!-- Panel 3: Projects -->
+      <section id="panel-projects" class="tab-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Featured Projects</h2>
+          <button type="button" id="btn-add-project" class="btn-outline">
+            + Add Project
+          </button>
+        </div>
+        <div id="projects-admin-list">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+
+      <!-- Panel 4: Skills -->
+      <section id="panel-skills" class="tab-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Skills & Capabilities</h2>
+        </div>
+        <div class="skills-admin-grid">
+          <!-- Technical -->
+          <div class="skills-category-box">
+            <h3 class="skills-box-title">⚙️ Technical</h3>
+            <div id="skills-list-technical" style="margin-bottom: 16px;"></div>
+            <form id="form-add-skill-technical" style="display: flex; gap: 6px;">
+              <input type="text" class="form-input" placeholder="Add technical skill" required style="padding: 8px 12px; font-size: 12px;">
+              <button type="submit" class="btn-outline" style="padding: 6px 12px;">Add</button>
+            </form>
+          </div>
+
+          <!-- Tools -->
+          <div class="skills-category-box">
+            <h3 class="skills-box-title">🛠️ Tools & Platforms</h3>
+            <div id="skills-list-tools" style="margin-bottom: 16px;"></div>
+            <form id="form-add-skill-tools" style="display: flex; gap: 6px;">
+              <input type="text" class="form-input" placeholder="Add tool" required style="padding: 8px 12px; font-size: 12px;">
+              <button type="submit" class="btn-outline" style="padding: 6px 12px;">Add</button>
+            </form>
+          </div>
+
+          <!-- Soft Skills -->
+          <div class="skills-category-box">
+            <h3 class="skills-box-title">💡 Soft Skills</h3>
+            <div id="skills-list-soft" style="margin-bottom: 16px;"></div>
+            <form id="form-add-skill-soft" style="display: flex; gap: 6px;">
+              <input type="text" class="form-input" placeholder="Add soft skill" required style="padding: 8px 12px; font-size: 12px;">
+              <button type="submit" class="btn-outline" style="padding: 6px 12px;">Add</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- Panel 5: FAQ -->
+      <section id="panel-faq" class="tab-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Frequently Asked Questions</h2>
+          <button type="button" id="btn-add-faq" class="btn-outline">
+            + Add Question
+          </button>
+        </div>
+        <div id="faq-admin-list">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ====================================================
+       3. Edit / Create Modals
+       ==================================================== -->
+  
+  <!-- Experience Modal -->
+  <div id="modal-experience" class="admin-modal-backdrop">
+    <div class="admin-modal-card">
+      <div class="modal-header-bar">
+        <h3 id="modal-experience-title" class="modal-title">Add Experience</h3>
+        <button type="button" class="btn-icon modal-close" aria-label="Close modal">✕</button>
+      </div>
+      <form id="form-experience">
+        <input type="hidden" id="exp-id">
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="exp-company" class="form-label">Company</label>
+            <input type="text" id="exp-company" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label for="exp-title" class="form-label">Role / Title</label>
+            <input type="text" id="exp-title" class="form-input" required>
+          </div>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="exp-start" class="form-label">Start Date (e.g. May 2022)</label>
+            <input type="text" id="exp-start" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label for="exp-end" class="form-label">End Date (e.g. Present)</label>
+            <input type="text" id="exp-end" class="form-input" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Achievement Bullets</label>
+          <div id="exp-bullets-container"></div>
+          <button type="button" id="btn-exp-add-bullet" class="btn-add-bullet">+ Add Bullet Point</button>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn-outline modal-close">Cancel</button>
+          <button type="submit" class="btn-full" style="width: auto; padding: 10px 24px;">Save Experience</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Project Modal -->
+  <div id="modal-project" class="admin-modal-backdrop">
+    <div class="admin-modal-card">
+      <div class="modal-header-bar">
+        <h3 id="modal-project-title" class="modal-title">Add Project</h3>
+        <button type="button" class="btn-icon modal-close" aria-label="Close modal">✕</button>
+      </div>
+      <form id="form-project">
+        <input type="hidden" id="proj-id">
+        <div class="form-group">
+          <label for="proj-name" class="form-label">Project Name</label>
+          <input type="text" id="proj-name" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label for="proj-desc" class="form-label">Description / Summary</label>
+          <textarea id="proj-desc" class="form-textarea" rows="4" required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="proj-tags" class="form-label">Tech Tags (comma separated, e.g. SQL, Power BI, DAX)</label>
+          <input type="text" id="proj-tags" class="form-input" placeholder="SQL, Power BI, DAX">
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="proj-thumb" class="form-label">Thumbnail URL</label>
+            <input type="text" id="proj-thumb" class="form-input" placeholder="/assets/placeholder-avatar.svg">
+          </div>
+          <div class="form-group">
+            <label for="proj-link" class="form-label">External / GitHub Link</label>
+            <input type="url" id="proj-link" class="form-input" placeholder="https://github.com/...">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="proj-video" class="form-label">Video Demo URL (Optional)</label>
+          <input type="url" id="proj-video" class="form-input" placeholder="https://...">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn-outline modal-close">Cancel</button>
+          <button type="submit" class="btn-full" style="width: auto; padding: 10px 24px;">Save Project</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- FAQ Modal -->
+  <div id="modal-faq" class="admin-modal-backdrop">
+    <div class="admin-modal-card">
+      <div class="modal-header-bar">
+        <h3 id="modal-faq-title" class="modal-title">Add FAQ Question</h3>
+        <button type="button" class="btn-icon modal-close" aria-label="Close modal">✕</button>
+      </div>
+      <form id="form-faq">
+        <input type="hidden" id="faq-id">
+        <div class="form-group">
+          <label for="faq-question" class="form-label">Question</label>
+          <input type="text" id="faq-question" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label for="faq-answer" class="form-label">Answer</label>
+          <textarea id="faq-answer" class="form-textarea" rows="4" required></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn-outline modal-close">Cancel</button>
+          <button type="submit" class="btn-full" style="width: auto; padding: 10px 24px;">Save FAQ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- Admin Controller Script -->
+  <script type="module" src="/admin/admin.js"></script>
+</body>
+</html>
