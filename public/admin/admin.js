@@ -68,12 +68,23 @@ export function openPdfUrl(url) {
 /**
  * Syncs administrative updates into client localStorage so live site reflects changes immediately
  */
+export function getLocalOverrides() {
+  try {
+    const raw = localStorage.getItem('portfolio_live_overrides');
+    return raw ? JSON.parse(raw) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 export function syncLocalOverrides(partial = {}) {
   try {
-    const existing = JSON.parse(localStorage.getItem('portfolio_live_overrides') || '{}');
+    const existing = getLocalOverrides() || {};
     const updated = {
       ...existing,
-      ...partial
+      ...partial,
+      _has_custom_edits: true,
+      _last_modified: Date.now()
     };
     localStorage.setItem('portfolio_live_overrides', JSON.stringify(updated));
   } catch (_) {}
@@ -183,12 +194,19 @@ async function handleLogout() {
  */
 async function loadDashboardData() {
   try {
+    const localOverrides = getLocalOverrides();
+
     // 1. Personal Info
     const pRes = await fetch(`/api/admin/personal-info?t=${Date.now()}`);
     const pData = await pRes.json();
     if (pData.success && pData.data) {
-      syncLocalOverrides({ personal_info: pData.data });
-      hydratePersonalInfo(pData.data);
+      const serverInfo = pData.data;
+      const mergedInfo = (localOverrides && localOverrides.personal_info)
+        ? { ...serverInfo, ...localOverrides.personal_info }
+        : serverInfo;
+      hydratePersonalInfo(mergedInfo);
+    } else if (localOverrides && localOverrides.personal_info) {
+      hydratePersonalInfo(localOverrides.personal_info);
     }
 
     // 2. Load Experience, Projects, Skills, FAQ from admin endpoints
@@ -881,11 +899,19 @@ async function handleSavePersonalInfo(e) {
  * 4. Experience CRUD
  */
 async function loadExperience() {
+  const localOverrides = getLocalOverrides();
   const res = await fetch(`/api/admin/experience?t=${Date.now()}`);
   const data = await res.json();
   if (data.success) {
-    allExperiences = data.data || [];
-    syncLocalOverrides({ experience: allExperiences });
+    const serverExp = data.data || [];
+    if (localOverrides && Array.isArray(localOverrides.experience) && localOverrides.experience.length > 0) {
+      allExperiences = localOverrides.experience;
+    } else {
+      allExperiences = serverExp;
+    }
+    renderExperienceList();
+  } else if (localOverrides && Array.isArray(localOverrides.experience)) {
+    allExperiences = localOverrides.experience;
     renderExperienceList();
   }
 }
@@ -988,6 +1014,7 @@ async function handleSaveExperience(e) {
       closeModal('modal-experience');
       showToast(id ? 'Experience updated!' : 'Experience added!');
       await loadExperience();
+      syncLocalOverrides({ experience: allExperiences });
     } else {
       showToast(data.error || 'Failed to save experience', 'error');
     }
@@ -1005,6 +1032,7 @@ async function deleteExperience(id) {
     if (res.ok && data.success) {
       showToast('Experience deleted.');
       await loadExperience();
+      syncLocalOverrides({ experience: allExperiences });
     } else {
       showToast(data.error || 'Failed to delete experience', 'error');
     }
@@ -1033,6 +1061,7 @@ async function reorderExperience(index, direction) {
       body: JSON.stringify({ items: reorderPayload })
     });
     renderExperienceList();
+    syncLocalOverrides({ experience: allExperiences });
     showToast('Order updated');
   } catch (_) {
     showToast('Failed to update order', 'error');
@@ -1043,11 +1072,19 @@ async function reorderExperience(index, direction) {
  * 5. Projects CRUD
  */
 async function loadProjects() {
+  const localOverrides = getLocalOverrides();
   const res = await fetch(`/api/admin/projects?t=${Date.now()}`);
   const data = await res.json();
   if (data.success) {
-    allProjects = data.data || [];
-    syncLocalOverrides({ projects: allProjects });
+    const serverProjects = data.data || [];
+    if (localOverrides && Array.isArray(localOverrides.projects) && localOverrides.projects.length > 0) {
+      allProjects = localOverrides.projects;
+    } else {
+      allProjects = serverProjects;
+    }
+    renderProjectsList();
+  } else if (localOverrides && Array.isArray(localOverrides.projects)) {
+    allProjects = localOverrides.projects;
     renderProjectsList();
   }
 }
@@ -1237,6 +1274,7 @@ async function handleSaveProject(e) {
       closeModal('modal-project');
       showToast(id ? 'Project updated!' : 'Project added!');
       await loadProjects();
+      syncLocalOverrides({ projects: allProjects });
     } else {
       showToast(data.error || 'Failed to save project', 'error');
     }
@@ -1254,6 +1292,7 @@ async function deleteProject(id) {
     if (res.ok && data.success) {
       showToast('Project deleted.');
       await loadProjects();
+      syncLocalOverrides({ projects: allProjects });
     } else {
       showToast(data.error || 'Failed to delete project', 'error');
     }
@@ -1282,6 +1321,7 @@ async function reorderProjects(index, direction) {
       body: JSON.stringify({ items: reorderPayload })
     });
     renderProjectsList();
+    syncLocalOverrides({ projects: allProjects });
     showToast('Order updated');
   } catch (_) {
     showToast('Failed to update order', 'error');
@@ -1292,11 +1332,19 @@ async function reorderProjects(index, direction) {
  * 6. Skills CRUD
  */
 async function loadSkills() {
+  const localOverrides = getLocalOverrides();
   const res = await fetch(`/api/admin/skills?t=${Date.now()}`);
   const data = await res.json();
   if (data.success) {
-    allSkills = data.data || [];
-    syncLocalOverrides({ skills: getGroupedSkills(allSkills) });
+    const serverSkills = data.data || [];
+    if (localOverrides && Array.isArray(localOverrides.skills_flat) && localOverrides.skills_flat.length > 0) {
+      allSkills = localOverrides.skills_flat;
+    } else {
+      allSkills = serverSkills;
+    }
+    renderSkillsList();
+  } else if (localOverrides && Array.isArray(localOverrides.skills_flat)) {
+    allSkills = localOverrides.skills_flat;
     renderSkillsList();
   }
 }
@@ -1337,6 +1385,7 @@ async function handleAddSkill(cat, valueInput) {
       valueInput.value = '';
       showToast(`Skill added to ${cat}`);
       await loadSkills();
+      syncLocalOverrides({ skills: getGroupedSkills(allSkills), skills_flat: allSkills });
     } else {
       showToast(data.error || 'Failed to add skill', 'error');
     }
@@ -1352,6 +1401,7 @@ async function deleteSkill(id) {
     if (res.ok && data.success) {
       showToast('Skill removed.');
       await loadSkills();
+      syncLocalOverrides({ skills: getGroupedSkills(allSkills), skills_flat: allSkills });
     } else {
       showToast(data.error || 'Failed to delete skill', 'error');
     }
@@ -1364,11 +1414,19 @@ async function deleteSkill(id) {
  * 7. FAQ CRUD
  */
 async function loadFaq() {
+  const localOverrides = getLocalOverrides();
   const res = await fetch(`/api/admin/faq?t=${Date.now()}`);
   const data = await res.json();
   if (data.success) {
-    allFaqs = data.data || [];
-    syncLocalOverrides({ faq: allFaqs });
+    const serverFaqs = data.data || [];
+    if (localOverrides && Array.isArray(localOverrides.faq) && localOverrides.faq.length > 0) {
+      allFaqs = localOverrides.faq;
+    } else {
+      allFaqs = serverFaqs;
+    }
+    renderFaqList();
+  } else if (localOverrides && Array.isArray(localOverrides.faq)) {
+    allFaqs = localOverrides.faq;
     renderFaqList();
   }
 }
@@ -1438,6 +1496,7 @@ async function handleSaveFaq(e) {
       closeModal('modal-faq');
       showToast(id ? 'FAQ updated!' : 'FAQ added!');
       await loadFaq();
+      syncLocalOverrides({ faq: allFaqs });
     } else {
       showToast(data.error || 'Failed to save FAQ', 'error');
     }
@@ -1455,6 +1514,7 @@ async function deleteFaq(id) {
     if (res.ok && data.success) {
       showToast('FAQ deleted.');
       await loadFaq();
+      syncLocalOverrides({ faq: allFaqs });
     } else {
       showToast(data.error || 'Failed to delete FAQ', 'error');
     }
@@ -1483,6 +1543,7 @@ async function reorderFaq(index, direction) {
       body: JSON.stringify({ items: reorderPayload })
     });
     renderFaqList();
+    syncLocalOverrides({ faq: allFaqs });
     showToast('Order updated');
   } catch (_) {
     showToast('Failed to update order', 'error');

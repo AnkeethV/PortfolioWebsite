@@ -34,6 +34,13 @@ export default async function handler(req, res) {
     await ensureSeeded();
   } catch (_) {}
 
+  // Safely parse JSON body if string
+  if (typeof req.body === 'string') {
+    try {
+      req.body = JSON.parse(req.body);
+    } catch (_) {}
+  }
+
   const route = req.query?.route || (req.url ? req.url.split('?')[0].replace(/^\/api\/admin\/?/, '') : '');
   const targetHandler = handlers[route];
   if (targetHandler) {

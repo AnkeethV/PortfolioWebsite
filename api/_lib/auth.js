@@ -11,7 +11,10 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const settingsFilePath = path.resolve(__dirname, '../../.data/admin_settings.json');
+const isVercel = Boolean(process.env.VERCEL);
+const settingsFilePath = isVercel
+  ? '/tmp/admin_settings.json'
+  : path.resolve(__dirname, '../../.data/admin_settings.json');
 
 function readLocalSettings() {
   try {
