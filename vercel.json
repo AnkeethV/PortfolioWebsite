@@ -3,6 +3,11 @@
   "outputDirectory": "public",
   "cleanUrls": true,
   "trailingSlash": false,
+  "functions": {
+    "api/**/*.js": {
+      "includeFiles": "profile.md"
+    }
+  },
   "rewrites": [
     {
       "source": "/admin",

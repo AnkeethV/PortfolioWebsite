@@ -13,11 +13,12 @@ const ipRequests = new Map();
  * Get client IP from request headers or socket
  */
 export function getClientIp(req) {
-  const forwarded = req.headers['x-forwarded-for'];
+  const headers = req?.headers || {};
+  const forwarded = headers['x-forwarded-for'];
   if (forwarded) {
     return forwarded.split(',')[0].trim();
   }
-  return req.headers['x-real-ip'] || req.socket?.remoteAddress || '127.0.0.1';
+  return headers['x-real-ip'] || req?.socket?.remoteAddress || '127.0.0.1';
 }
 
 /**

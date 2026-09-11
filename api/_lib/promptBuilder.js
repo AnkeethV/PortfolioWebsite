@@ -54,32 +54,87 @@ export async function buildSystemPrompt() {
   // Fallback: If DB data is empty or unavailable, parse profile.md directly
   if (!p.name || !experiences) {
     try {
-      const profilePath = path.resolve(__dirname, '../../profile.md');
-      if (fs.existsSync(profilePath)) {
-        const parsed = parseProfile(profilePath);
-        p = parsed.personalInfo || {};
+      const candidatePaths = [
+        path.resolve(__dirname, '../../profile.md'),
+        path.resolve(__dirname, '../profile.md'),
+        path.resolve(process.cwd(), 'profile.md'),
+        path.resolve(process.cwd(), 'api/profile.md')
+      ];
 
-        experiences = (parsed.experience || []).map(e => {
-          const bullets = Array.isArray(e.bullets) ? e.bullets : [];
-          return `* ${e.company} — ${e.title} (${e.start_date} – ${e.end_date})\n${bullets.map(b => `  - ${b}`).join('\n')}`;
-        }).join('\n\n');
+      for (const candidate of candidatePaths) {
+        if (fs.existsSync(candidate)) {
+          const parsed = parseProfile(candidate);
+          p = parsed.personalInfo || {};
 
-        projects = (parsed.projects || []).map(pr => {
-          const tags = Array.isArray(pr.tech_tags) ? pr.tech_tags : [];
-          return `* ${pr.name}: ${pr.description} (Tech: ${tags.join(', ')}) [Link: ${pr.external_link || 'N/A'}]`;
-        }).join('\n');
+          experiences = (parsed.experience || []).map(e => {
+            const bullets = Array.isArray(e.bullets) ? e.bullets : [];
+            return `* ${e.company} — ${e.title} (${e.start_date} – ${e.end_date})\n${bullets.map(b => `  - ${b}`).join('\n')}`;
+          }).join('\n\n');
 
-        skillsByCategory = { technical: [], tools: [], soft: [] };
-        (parsed.skills || []).forEach(s => {
-          const cat = s.category ? s.category.toLowerCase() : 'technical';
-          if (skillsByCategory[cat]) skillsByCategory[cat].push(s.value);
-        });
+          projects = (parsed.projects || []).map(pr => {
+            const tags = Array.isArray(pr.tech_tags) ? pr.tech_tags : [];
+            return `* ${pr.name}: ${pr.description} (Tech: ${tags.join(', ')}) [Link: ${pr.external_link || 'N/A'}]`;
+          }).join('\n');
 
-        faqs = (parsed.faq || []).map(f => `Q: ${f.question}\nA: ${f.answer}`).join('\n\n');
+          skillsByCategory = { technical: [], tools: [], soft: [] };
+          (parsed.skills || []).forEach(s => {
+            const cat = s.category ? s.category.toLowerCase() : 'technical';
+            if (skillsByCategory[cat]) skillsByCategory[cat].push(s.value);
+          });
+
+          faqs = (parsed.faq || []).map(f => `Q: ${f.question}\nA: ${f.answer}`).join('\n\n');
+          break;
+        }
       }
     } catch (fallbackErr) {
-      console.error('Fallback profile.md parse in buildSystemPrompt failed:', fallbackErr);
+      console.warn('Fallback profile.md parse in buildSystemPrompt failed:', fallbackErr.message);
     }
+  }
+
+  // Ensure grounded content is never empty
+  if (!p.name) {
+    p = {
+      name: 'Ankeeth V',
+      title: 'Senior Engineer - Infrastructure Management Services at Kaseya',
+      location: 'Bengaluru, Karnataka, India',
+      email: 'ankeeth.v@gmail.com',
+      linkedin_url: 'https://www.linkedin.com/in/ankeeth-v-',
+      github_url: 'https://github.com/AnkeethV',
+      bio: 'Client-focused problem solver and data & AI specialist with deep experience in stakeholder communication and systems engineering.'
+    };
+  }
+
+  if (!experiences) {
+    experiences = `* Kaseya — Senior Engineer - Infrastructure Management Services (May 2022 – Present)
+  - Spearheaded analysis of customer resolution-time data across high-frequency support categories, identifying recurring operational friction points.
+  - Formulated and executed a standardized incident routing and triage framework, reducing repeated-issue volume by 85% and elevating first-contact resolution rates.
+  - Partnered directly with enterprise clients to diagnose complex system anomalies, translating high-friction technical issues into clear analytical problem statements.
+  - Monitored real-time system performance and incident metrics, providing cross-functional teams with actionable operational insights that prevented SLA breaches.
+  - Authored comprehensive process documentation and troubleshooting runbooks adopted team-wide, cutting new engineer onboarding time significantly.`;
+  }
+
+  if (!projects) {
+    projects = `* Business360: Integrated executive business intelligence dashboard consolidating sales, finance, and supply chain KPIs across multi-region operations. (Tech: SQL, Power BI, Advanced Excel, DAX) [Link: https://github.com/AnkeethV]
+* AdHoc Analysis: Automated SQL-driven analytics repository generating rapid, ad-hoc business intelligence insights for operational decision-making. (Tech: SQL, PostgreSQL, Data Modeling) [Link: https://github.com/AnkeethV]`;
+  }
+
+  if (!skillsByCategory.technical.length) {
+    skillsByCategory = {
+      technical: ['SQL', 'Data Analytics', 'Business Intelligence', 'Data Modeling', 'Database Systems', 'Systems Engineering', 'AI-Assisted Workflows'],
+      tools: ['Power BI', 'Advanced Excel', 'PostgreSQL', 'Git', 'Vercel', 'Jira', 'ServiceNow'],
+      soft: ['Stakeholder Communication', 'Problem Solving', 'Incident Management', 'Cross-Functional Collaboration', 'Process Optimization']
+    };
+  }
+
+  if (!faqs) {
+    faqs = `Q: What is your notice period?
+A: 60 Days.
+
+Q: Are you open to relocation?
+A: I am based in Bengaluru, Karnataka, India and not open to physical relocation at this time. However, I am open to remote opportunities or local roles.
+
+Q: What are your salary expectations?
+A: My compensation expectations are competitive and depend on the scope, seniority, and impact of the role. Please feel free to email me directly at [ankeeth.v@gmail.com](mailto:ankeeth.v@gmail.com) to discuss.`;
   }
 
   const prompt = `

@@ -46,9 +46,9 @@ export function parseMarkdown(markdownText) {
   // 1. Escape raw HTML first
   let html = escapeHtml(markdownText);
 
-  // 2. Parse Markdown Links: [Link Text](https://... or mailto:...)
-  // Only allow http, https, and mailto protocols for safety
-  html = html.replace(/\[([^\]]+)\]\(((?:https?:\/\/|mailto:)[^\s\)]+)\)/g, (match, label, url) => {
+  // 2. Parse Markdown Links: [Link Text](https://... or mailto:... or /...)
+  // Only allow http, https, mailto, and relative site paths for safety
+  html = html.replace(/\[([^\]]+)\]\(((?:https?:\/\/|mailto:|\/)[^\s\)]+)\)/g, (match, label, url) => {
     const isMail = url.startsWith('mailto:');
     const targetAttr = isMail ? '' : ' target="_blank" rel="noopener noreferrer"';
     return `<a href="${url}"${targetAttr}>${label}</a>`;
