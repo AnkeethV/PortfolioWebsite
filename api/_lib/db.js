@@ -37,11 +37,14 @@ if (connectionString) {
 async function getPglite() {
   if (!pgliteInstance) {
     const { PGlite } = await import('@electric-sql/pglite');
-    // Store in .data/pglite in workspace root (or PG_DATA_DIR if set)
-    const dataDir = process.env.PG_DATA_DIR || path.resolve(__dirname, '../../.data/pglite');
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
+    // On Vercel, serverless filesystem is read-only except /tmp
+    const isVercel = Boolean(process.env.VERCEL);
+    const dataDir = process.env.PG_DATA_DIR || (isVercel ? '/tmp/pglite' : path.resolve(__dirname, '../../.data/pglite'));
+    try {
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+    } catch (_) {}
     pgliteInstance = new PGlite(dataDir);
     await pgliteInstance.waitReady;
   }

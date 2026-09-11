@@ -1,9 +1,54 @@
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { query } from './_lib/db.js';
 import { ensureSeeded } from './_lib/seed.js';
+import { parseProfile } from './_lib/parseProfile.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+/**
+ * Parses profile.md directly as a robust zero-failure fallback
+ * when a live PostgreSQL database is not connected on Vercel.
+ */
+function getFallbackContent() {
+  const profilePath = path.resolve(__dirname, '../profile.md');
+  if (!fs.existsSync(profilePath)) {
+    throw new Error(`profile.md not found at ${profilePath}`);
+  }
+  const parsed = parseProfile(profilePath);
+
+  const skills = {
+    technical: [],
+    tools: [],
+    soft: []
+  };
+
+  (parsed.skills || []).forEach((s, idx) => {
+    const cat = s.category ? s.category.toLowerCase() : 'technical';
+    const item = { id: s.id || idx + 1, value: s.value, sort_order: s.sort_order || idx + 1 };
+    if (skills[cat]) {
+      skills[cat].push(item);
+    } else {
+      skills.technical.push(item);
+    }
+  });
+
+  return {
+    personal_info: parsed.personalInfo,
+    experience: parsed.experience,
+    projects: parsed.projects,
+    skills,
+    faq: parsed.faq
+  };
+}
 
 /**
  * Vercel Serverless Function: GET /api/content
  * Returns public portfolio data: personal_info, experience, projects, skills, faq
+ * Seamlessly pulls from PostgreSQL when available, or instantly falls back to
+ * profile.md so the live website is NEVER blank.
  */
 export default async function handler(req, res) {
   // CORS & method check
@@ -19,8 +64,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed. Use GET.' });
   }
 
+  // 1. Attempt database query first (both remote Postgres or local PGlite)
   try {
-    // Ensure database has initial data
     await ensureSeeded();
 
     // 1. Fetch Personal Info
@@ -61,25 +106,38 @@ export default async function handler(req, res) {
     const fRes = await query('SELECT id, question, answer, sort_order FROM faq ORDER BY sort_order ASC, id ASC');
     const faq = fRes.rows;
 
-    // Cache control for public read (revalidate every 60 seconds)
-    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    if (personalInfo || (experience && experience.length > 0)) {
+      res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+      return res.status(200).json({
+        success: true,
+        data: {
+          personal_info: personalInfo,
+          experience,
+          projects,
+          skills,
+          faq
+        }
+      });
+    }
+  } catch (err) {
+    console.warn('Database query failed or unconfigured, falling back to profile.md content:', err.message);
+  }
 
+  // 2. Fallback: Parse profile.md directly (zero-config, high performance, always works)
+  try {
+    const fallbackData = getFallbackContent();
+    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
     return res.status(200).json({
       success: true,
-      data: {
-        personal_info: personalInfo,
-        experience,
-        projects,
-        skills,
-        faq
-      }
+      data: fallbackData,
+      source: 'profile_markdown'
     });
-  } catch (err) {
-    console.error('Error fetching content:', err);
+  } catch (fallbackErr) {
+    console.error('Fatal error loading fallback content:', fallbackErr);
     return res.status(500).json({
       success: false,
       error: 'Failed to retrieve portfolio content',
-      details: err.message
+      details: fallbackErr.message
     });
   }
 }

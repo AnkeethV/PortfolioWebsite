@@ -1,35 +1,86 @@
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { query } from './db.js';
+import { parseProfile } from './parseProfile.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Builds the grounded system prompt dynamically from live database records
- * to guarantee zero hallucinations and strict adherence to PRD Section 5.6.1 rules.
+ * with an instant fallback to profile.md when the database is unavailable.
  */
 export async function buildSystemPrompt() {
-  // 1. Fetch live profile data
-  const pRes = await query('SELECT * FROM personal_info LIMIT 1');
-  const p = pRes.rows[0] || {};
+  let p = {};
+  let experiences = '';
+  let projects = '';
+  let skillsByCategory = { technical: [], tools: [], soft: [] };
+  let faqs = '';
 
-  const eRes = await query('SELECT company, title, start_date, end_date, bullets FROM experience ORDER BY sort_order ASC, id ASC');
-  const experiences = eRes.rows.map(e => {
-    const bullets = typeof e.bullets === 'string' ? JSON.parse(e.bullets) : (e.bullets || []);
-    return `* ${e.company} — ${e.title} (${e.start_date} – ${e.end_date})\n${bullets.map(b => `  - ${b}`).join('\n')}`;
-  }).join('\n\n');
+  const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
-  const projRes = await query('SELECT name, description, tech_tags, external_link FROM projects ORDER BY sort_order ASC, id ASC');
-  const projects = projRes.rows.map(pr => {
-    const tags = typeof pr.tech_tags === 'string' ? JSON.parse(pr.tech_tags) : (pr.tech_tags || []);
-    return `* ${pr.name}: ${pr.description} (Tech: ${tags.join(', ')}) [Link: ${pr.external_link || 'N/A'}]`;
-  }).join('\n');
+  if (connectionString) {
+    try {
+      // 1. Fetch live profile data from DB
+      const pRes = await query('SELECT * FROM personal_info LIMIT 1');
+      p = pRes.rows[0] || {};
 
-  const sRes = await query('SELECT category, value FROM skills ORDER BY category, sort_order ASC, id ASC');
-  const skillsByCategory = { technical: [], tools: [], soft: [] };
-  sRes.rows.forEach(s => {
-    const cat = s.category ? s.category.toLowerCase() : 'technical';
-    if (skillsByCategory[cat]) skillsByCategory[cat].push(s.value);
-  });
+      const eRes = await query('SELECT company, title, start_date, end_date, bullets FROM experience ORDER BY sort_order ASC, id ASC');
+      experiences = eRes.rows.map(e => {
+        const bullets = typeof e.bullets === 'string' ? JSON.parse(e.bullets) : (e.bullets || []);
+        return `* ${e.company} — ${e.title} (${e.start_date} – ${e.end_date})\n${bullets.map(b => `  - ${b}`).join('\n')}`;
+      }).join('\n\n');
 
-  const fRes = await query('SELECT question, answer FROM faq ORDER BY sort_order ASC, id ASC');
-  const faqs = fRes.rows.map(f => `Q: ${f.question}\nA: ${f.answer}`).join('\n\n');
+      const projRes = await query('SELECT name, description, tech_tags, external_link FROM projects ORDER BY sort_order ASC, id ASC');
+      projects = projRes.rows.map(pr => {
+        const tags = typeof pr.tech_tags === 'string' ? JSON.parse(pr.tech_tags) : (pr.tech_tags || []);
+        return `* ${pr.name}: ${pr.description} (Tech: ${tags.join(', ')}) [Link: ${pr.external_link || 'N/A'}]`;
+      }).join('\n');
+
+      const sRes = await query('SELECT category, value FROM skills ORDER BY category, sort_order ASC, id ASC');
+      sRes.rows.forEach(s => {
+        const cat = s.category ? s.category.toLowerCase() : 'technical';
+        if (skillsByCategory[cat]) skillsByCategory[cat].push(s.value);
+      });
+
+      const fRes = await query('SELECT question, answer FROM faq ORDER BY sort_order ASC, id ASC');
+      faqs = fRes.rows.map(f => `Q: ${f.question}\nA: ${f.answer}`).join('\n\n');
+    } catch (err) {
+      console.warn('DB query in buildSystemPrompt failed, falling back to profile.md:', err.message);
+    }
+  }
+
+  // Fallback: If DB data is empty or unavailable, parse profile.md directly
+  if (!p.name || !experiences) {
+    try {
+      const profilePath = path.resolve(__dirname, '../../profile.md');
+      if (fs.existsSync(profilePath)) {
+        const parsed = parseProfile(profilePath);
+        p = parsed.personalInfo || {};
+
+        experiences = (parsed.experience || []).map(e => {
+          const bullets = Array.isArray(e.bullets) ? e.bullets : [];
+          return `* ${e.company} — ${e.title} (${e.start_date} – ${e.end_date})\n${bullets.map(b => `  - ${b}`).join('\n')}`;
+        }).join('\n\n');
+
+        projects = (parsed.projects || []).map(pr => {
+          const tags = Array.isArray(pr.tech_tags) ? pr.tech_tags : [];
+          return `* ${pr.name}: ${pr.description} (Tech: ${tags.join(', ')}) [Link: ${pr.external_link || 'N/A'}]`;
+        }).join('\n');
+
+        skillsByCategory = { technical: [], tools: [], soft: [] };
+        (parsed.skills || []).forEach(s => {
+          const cat = s.category ? s.category.toLowerCase() : 'technical';
+          if (skillsByCategory[cat]) skillsByCategory[cat].push(s.value);
+        });
+
+        faqs = (parsed.faq || []).map(f => `Q: ${f.question}\nA: ${f.answer}`).join('\n\n');
+      }
+    } catch (fallbackErr) {
+      console.error('Fallback profile.md parse in buildSystemPrompt failed:', fallbackErr);
+    }
+  }
 
   const prompt = `
 You are the AI version of ${p.name || 'Ankeeth V'}, speaking directly to recruiters, hiring managers, and clients who visit your portfolio website.
