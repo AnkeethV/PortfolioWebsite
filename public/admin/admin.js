@@ -592,6 +592,25 @@ function openImageCropper({ file, category, ratio, onCropped }) {
   reader.readAsDataURL(file);
 }
 
+function getDisplayFileName(url, defaultName = 'file') {
+  if (!url || typeof url !== 'string') return defaultName;
+  if (url.startsWith('data:')) {
+    if (url.startsWith('data:application/pdf') || defaultName.endsWith('.pdf')) {
+      return 'resume.pdf';
+    }
+    if (url.startsWith('data:image/png')) {
+      return 'photo.png';
+    }
+    if (url.startsWith('data:image/')) {
+      return 'photo.jpg';
+    }
+    return defaultName;
+  }
+  const clean = url.split('?')[0].split('#')[0];
+  const last = clean.split('/').pop();
+  return (last && last.length > 0 && last.length < 40 && !last.includes(';base64')) ? last : defaultName;
+}
+
 function setPhoto(url, name) {
   const photoInput = document.getElementById('p-photo');
   const dropzone = document.getElementById('photo-dropzone');
@@ -603,7 +622,10 @@ function setPhoto(url, name) {
   if (dropzone) dropzone.style.display = 'none';
   if (previewWrap) previewWrap.style.display = 'flex';
   if (previewImg) previewImg.src = url;
-  if (previewName) previewName.textContent = name || url.split('/').pop() || 'photo.jpg';
+  const displayName = (name && !name.startsWith('data:') && name.length < 40 && !name.includes(';base64'))
+    ? name
+    : getDisplayFileName(url, 'photo.jpg');
+  if (previewName) previewName.textContent = displayName;
 }
 
 function clearPhoto() {
@@ -630,7 +652,10 @@ function setResume(url, name) {
   if (resumeInput) resumeInput.value = url;
   if (dropzone) dropzone.style.display = 'none';
   if (previewWrap) previewWrap.style.display = 'flex';
-  if (previewName) previewName.textContent = name || url.split('/').pop() || 'resume.pdf';
+  const displayName = (name && !name.startsWith('data:') && name.length < 40 && !name.includes(';base64'))
+    ? name
+    : getDisplayFileName(url, 'resume.pdf');
+  if (previewName) previewName.textContent = displayName;
   if (viewLink) {
     viewLink.onclick = (e) => {
       e.preventDefault();
@@ -668,7 +693,9 @@ function setProjThumb(url, name) {
   if (dropzone) dropzone.style.display = 'none';
   if (previewWrap) previewWrap.style.display = 'flex';
   if (previewImg) previewImg.src = url;
-  const displayName = name || url.split('/').pop() || 'thumbnail.jpg';
+  const displayName = (name && !name.startsWith('data:') && name.length < 40 && !name.includes(';base64'))
+    ? name
+    : getDisplayFileName(url, 'thumbnail.jpg');
   if (previewName) previewName.textContent = displayName;
   if (filenameLabel) filenameLabel.textContent = displayName;
   if (uploadedRow) uploadedRow.style.display = 'flex';
@@ -709,7 +736,9 @@ function setProjScreenshot1(url, name) {
   if (dropzone) dropzone.style.display = 'none';
   if (previewWrap) previewWrap.style.display = 'flex';
   if (previewImg) previewImg.src = url;
-  const displayName = name || url.split('/').pop() || 'screenshot1.jpg';
+  const displayName = (name && !name.startsWith('data:') && name.length < 40 && !name.includes(';base64'))
+    ? name
+    : getDisplayFileName(url, 'screenshot1.jpg');
   if (previewName) previewName.textContent = displayName;
   if (filenameLabel) filenameLabel.textContent = displayName;
   if (uploadedRow) uploadedRow.style.display = 'flex';
@@ -750,7 +779,9 @@ function setProjScreenshot2(url, name) {
   if (dropzone) dropzone.style.display = 'none';
   if (previewWrap) previewWrap.style.display = 'flex';
   if (previewImg) previewImg.src = url;
-  const displayName = name || url.split('/').pop() || 'screenshot2.jpg';
+  const displayName = (name && !name.startsWith('data:') && name.length < 40 && !name.includes(';base64'))
+    ? name
+    : getDisplayFileName(url, 'screenshot2.jpg');
   if (previewName) previewName.textContent = displayName;
   if (filenameLabel) filenameLabel.textContent = displayName;
   if (uploadedRow) uploadedRow.style.display = 'flex';
@@ -788,7 +819,10 @@ function setProjVideo(url, name) {
   if (dropzone) dropzone.style.display = 'none';
   if (previewWrap) previewWrap.style.display = 'flex';
   if (player) player.src = url;
-  if (previewName) previewName.textContent = name || url.split('/').pop() || 'demo.mp4';
+  const displayName = (name && !name.startsWith('data:') && name.length < 40 && !name.includes(';base64'))
+    ? name
+    : getDisplayFileName(url, 'demo.mp4');
+  if (previewName) previewName.textContent = displayName;
 }
 
 function clearProjVideo() {
@@ -851,13 +885,13 @@ function hydratePersonalInfo(info) {
   document.getElementById('p-bio').value = info.bio || '';
 
   if (info.photo_url) {
-    setPhoto(info.photo_url, info.photo_url.split('/').pop());
+    setPhoto(info.photo_url, getDisplayFileName(info.photo_url, 'photo.jpg'));
   } else {
     clearPhoto();
   }
 
   if (info.resume_url) {
-    setResume(info.resume_url, info.resume_url.split('/').pop());
+    setResume(info.resume_url, getDisplayFileName(info.resume_url, 'resume.pdf'));
   } else {
     clearResume();
   }
