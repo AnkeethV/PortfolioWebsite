@@ -29,7 +29,6 @@
   "license": "ISC",
   "dependencies": {
     "@electric-sql/pglite": "^0.2.14",
-    "@vercel/postgres": "^0.10.0",
     "cookie": "^1.0.2",
     "dotenv": "^16.4.7",
     "groq-sdk": "^0.13.0",
