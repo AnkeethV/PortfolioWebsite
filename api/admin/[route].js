@@ -8,6 +8,7 @@ import skillsHandler from '../_lib/admin/skills.js';
 import faqHandler from '../_lib/admin/faq.js';
 import resetPasswordHandler from '../_lib/admin/reset-password.js';
 import uploadHandler from '../_lib/admin/upload.js';
+import { ensureSeeded } from '../_lib/seed.js';
 
 const handlers = {
   'login': loginHandler,
@@ -25,9 +26,14 @@ const handlers = {
 /**
  * Consolidated Admin API Router (Vercel Serverless Function)
  * Routes /api/admin/:route to the corresponding admin sub-handler.
- * Keeps total Serverless Functions within Vercel Hobby plan limit (<= 12).
+ * Automatically ensures DB is seeded on first load.
  */
 export default async function handler(req, res) {
+  // Ensure DB has initial data if DB is connected
+  try {
+    await ensureSeeded();
+  } catch (_) {}
+
   const route = req.query?.route || (req.url ? req.url.split('?')[0].replace(/^\/api\/admin\/?/, '') : '');
   const targetHandler = handlers[route];
   if (targetHandler) {

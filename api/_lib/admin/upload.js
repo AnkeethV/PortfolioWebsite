@@ -6,13 +6,11 @@ import { requireAdmin } from '../auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, '../..');
-const publicDir = path.resolve(rootDir, 'public');
 
 const ALLOWED_CONFIG = {
   photo: {
-    exts: ['.jpg', '.jpeg', '.png'],
-    mimes: ['image/jpeg', 'image/png'],
+    exts: ['.jpg', '.jpeg', '.png', '.webp'],
+    mimes: ['image/jpeg', 'image/png', 'image/webp'],
     folder: 'photos',
     maxSize: 15 * 1024 * 1024 // 15MB
   },
@@ -44,7 +42,8 @@ const ALLOWED_CONFIG = {
 
 /**
  * POST /api/admin/upload
- * Handles media uploads for photos, resumes, thumbnails, and video files
+ * Handles media uploads for photos, resumes, thumbnails, and video files.
+ * Works seamlessly on local disk AND on serverless platforms (Vercel) via Data URL fallback.
  */
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
@@ -93,7 +92,6 @@ export default async function handler(req, res) {
 
     // Validate mime type if supplied
     if (fileType && !config.mimes.includes(fileType.toLowerCase())) {
-      // In some browsers or containers quicktime / mp4 might have slight variation, check loosely if ext matched
       const mimeMatch = config.mimes.some(m => fileType.toLowerCase().startsWith(m.split('/')[0]));
       if (!mimeMatch) {
         return res.status(400).json({
@@ -114,21 +112,30 @@ export default async function handler(req, res) {
       });
     }
 
-    // Create target directory
-    const uploadFolder = path.join(publicDir, 'uploads', config.folder);
-    if (!fs.existsSync(uploadFolder)) {
-      fs.mkdirSync(uploadFolder, { recursive: true });
-    }
+    const mime = fileType || (config.mimes[0] || 'application/octet-stream');
+    const dataUrl = base64Data.startsWith('data:') ? base64Data : `data:${mime};base64,${base64Clean}`;
 
     // Generate safe unique filename
     const safeBase = path.basename(filename, rawExt).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 30);
     const uniqueSuffix = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     const safeFilename = `${safeBase}-${uniqueSuffix}${rawExt}`;
-    const targetFilePath = path.join(uploadFolder, safeFilename);
 
-    fs.writeFileSync(targetFilePath, buffer);
+    let publicUrl = dataUrl;
 
-    const publicUrl = `/uploads/${config.folder}/${safeFilename}`;
+    // Try saving to disk if writable (local dev server).
+    // On Vercel serverless, the filesystem is read-only, so we safely use dataUrl.
+    try {
+      const uploadFolder = path.resolve(__dirname, '../../../public/uploads', config.folder);
+      if (!fs.existsSync(uploadFolder)) {
+        fs.mkdirSync(uploadFolder, { recursive: true });
+      }
+      const targetFilePath = path.join(uploadFolder, safeFilename);
+      fs.writeFileSync(targetFilePath, buffer);
+      publicUrl = `/uploads/${config.folder}/${safeFilename}`;
+    } catch (diskErr) {
+      console.warn('Disk is read-only (Vercel serverless). Using data URL for media:', diskErr.message);
+      publicUrl = dataUrl;
+    }
 
     return res.status(200).json({
       success: true,

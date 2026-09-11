@@ -1,6 +1,7 @@
 import { query } from '../db.js';
 import { requireAdmin } from '../auth.js';
 import { initSchema } from '../seed.js';
+import { getFallbackProjects } from './fallbackHelper.js';
 
 let schemaInitialized = false;
 
@@ -34,12 +35,20 @@ export default async function handler(req, res) {
   try {
     // 1. GET all projects
     if (req.method === 'GET') {
-      const result = await query('SELECT * FROM projects ORDER BY sort_order ASC, id ASC');
-      const items = result.rows.map(row => ({
-        ...row,
-        tech_tags: typeof row.tech_tags === 'string' ? JSON.parse(row.tech_tags) : (row.tech_tags || []),
-        is_visible: row.is_visible !== false
-      }));
+      let items = [];
+      try {
+        const result = await query('SELECT * FROM projects ORDER BY sort_order ASC, id ASC');
+        items = result.rows.map(row => ({
+          ...row,
+          tech_tags: typeof row.tech_tags === 'string' ? JSON.parse(row.tech_tags) : (row.tech_tags || []),
+          is_visible: row.is_visible !== false
+        }));
+      } catch (dbErr) {
+        console.warn('Projects DB query failed:', dbErr.message);
+      }
+      if (items.length === 0) {
+        items = getFallbackProjects();
+      }
       return res.status(200).json({ success: true, data: items });
     }
 

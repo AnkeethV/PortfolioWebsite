@@ -3,15 +3,16 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { query } from '../db.js';
 import { requireAdmin } from '../auth.js';
+import { getFallbackPersonalInfo } from './fallbackHelper.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const backupFile = path.resolve(__dirname, '../../.data/personal_info_backup.json');
+const backupDir = process.env.VERCEL ? '/tmp' : path.resolve(__dirname, '../../.data');
+const backupFile = path.join(backupDir, 'personal_info_backup.json');
 
 function saveBackup(data) {
   try {
-    const dir = path.dirname(backupFile);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
     fs.writeFileSync(backupFile, JSON.stringify(data, null, 2), 'utf-8');
   } catch (err) {
     console.warn('Could not save personal info backup:', err.message);
@@ -38,10 +39,19 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const result = await query('SELECT * FROM personal_info ORDER BY id ASC LIMIT 1');
+      let info = null;
+      try {
+        const result = await query('SELECT * FROM personal_info ORDER BY id ASC LIMIT 1');
+        info = result.rows[0] || null;
+      } catch (dbErr) {
+        console.warn('Personal-info DB query failed:', dbErr.message);
+      }
+      if (!info) {
+        info = getFallbackPersonalInfo();
+      }
       return res.status(200).json({
         success: true,
-        data: result.rows[0] || null
+        data: info
       });
     }
 

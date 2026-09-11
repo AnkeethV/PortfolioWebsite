@@ -1,5 +1,6 @@
 import { query } from '../db.js';
 import { requireAdmin } from '../auth.js';
+import { getFallbackFaq } from './fallbackHelper.js';
 
 /**
  * /api/admin/faq
@@ -21,8 +22,17 @@ export default async function handler(req, res) {
   try {
     // 1. GET all FAQs
     if (req.method === 'GET') {
-      const result = await query('SELECT * FROM faq ORDER BY sort_order ASC, id ASC');
-      return res.status(200).json({ success: true, data: result.rows });
+      let items = [];
+      try {
+        const result = await query('SELECT * FROM faq ORDER BY sort_order ASC, id ASC');
+        items = result.rows;
+      } catch (dbErr) {
+        console.warn('FAQ DB query failed:', dbErr.message);
+      }
+      if (items.length === 0) {
+        items = getFallbackFaq();
+      }
+      return res.status(200).json({ success: true, data: items });
     }
 
     // 2. POST create FAQ

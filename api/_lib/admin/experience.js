@@ -1,5 +1,6 @@
 import { query } from '../db.js';
 import { requireAdmin } from '../auth.js';
+import { getFallbackExperience } from './fallbackHelper.js';
 
 /**
  * /api/admin/experience
@@ -21,11 +22,19 @@ export default async function handler(req, res) {
   try {
     // 1. GET all experiences
     if (req.method === 'GET') {
-      const result = await query('SELECT * FROM experience ORDER BY sort_order ASC, id ASC');
-      const items = result.rows.map(row => ({
-        ...row,
-        bullets: typeof row.bullets === 'string' ? JSON.parse(row.bullets) : (row.bullets || [])
-      }));
+      let items = [];
+      try {
+        const result = await query('SELECT * FROM experience ORDER BY sort_order ASC, id ASC');
+        items = result.rows.map(row => ({
+          ...row,
+          bullets: typeof row.bullets === 'string' ? JSON.parse(row.bullets) : (row.bullets || [])
+        }));
+      } catch (dbErr) {
+        console.warn('Experience DB query failed:', dbErr.message);
+      }
+      if (items.length === 0) {
+        items = getFallbackExperience();
+      }
       return res.status(200).json({ success: true, data: items });
     }
 
