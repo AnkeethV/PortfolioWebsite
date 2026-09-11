@@ -1,4 +1,4 @@
-import { validatePassword, generateToken, serializeAuthCookie } from '../_lib/auth.js';
+import { validatePassword, generateToken, serializeAuthCookie } from '../auth.js';
 
 /**
  * POST /api/admin/login

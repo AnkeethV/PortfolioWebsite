@@ -1,0 +1,37 @@
+import loginHandler from '../_lib/admin/login.js';
+import logoutHandler from '../_lib/admin/logout.js';
+import meHandler from '../_lib/admin/me.js';
+import personalInfoHandler from '../_lib/admin/personal-info.js';
+import experienceHandler from '../_lib/admin/experience.js';
+import projectsHandler from '../_lib/admin/projects.js';
+import skillsHandler from '../_lib/admin/skills.js';
+import faqHandler from '../_lib/admin/faq.js';
+import resetPasswordHandler from '../_lib/admin/reset-password.js';
+import uploadHandler from '../_lib/admin/upload.js';
+
+const handlers = {
+  'login': loginHandler,
+  'logout': logoutHandler,
+  'me': meHandler,
+  'personal-info': personalInfoHandler,
+  'experience': experienceHandler,
+  'projects': projectsHandler,
+  'skills': skillsHandler,
+  'faq': faqHandler,
+  'reset-password': resetPasswordHandler,
+  'upload': uploadHandler
+};
+
+/**
+ * Consolidated Admin API Router (Vercel Serverless Function)
+ * Routes /api/admin/:route to the corresponding admin sub-handler.
+ * Keeps total Serverless Functions within Vercel Hobby plan limit (<= 12).
+ */
+export default async function handler(req, res) {
+  const route = req.query?.route || (req.url ? req.url.split('?')[0].replace(/^\/api\/admin\/?/, '') : '');
+  const targetHandler = handlers[route];
+  if (targetHandler) {
+    return targetHandler(req, res);
+  }
+  return res.status(404).json({ error: `Admin endpoint not found: /api/admin/${route}` });
+}

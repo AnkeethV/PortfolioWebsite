@@ -1,4 +1,4 @@
-import { requireAdmin, validatePassword, setMasterPassword, generateToken, serializeAuthCookie } from '../_lib/auth.js';
+import { requireAdmin, validatePassword, setMasterPassword, generateToken, serializeAuthCookie } from '../auth.js';
 
 /**
  * POST /api/admin/reset-password

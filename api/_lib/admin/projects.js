@@ -1,6 +1,6 @@
-import { query } from '../_lib/db.js';
-import { requireAdmin } from '../_lib/auth.js';
-import { initSchema } from '../_lib/seed.js';
+import { query } from '../db.js';
+import { requireAdmin } from '../auth.js';
+import { initSchema } from '../seed.js';
 
 let schemaInitialized = false;
 

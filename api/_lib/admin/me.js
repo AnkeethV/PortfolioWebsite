@@ -1,4 +1,4 @@
-import { verifyToken } from '../_lib/auth.js';
+import { verifyToken } from '../auth.js';
 
 /**
  * GET /api/admin/me

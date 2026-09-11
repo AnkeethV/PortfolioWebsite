@@ -1,12 +1,12 @@
 import assert from 'assert';
-import loginHandler from '../api/admin/login.js';
-import logoutHandler from '../api/admin/logout.js';
-import meHandler from '../api/admin/me.js';
-import personalInfoHandler from '../api/admin/personal-info.js';
-import experienceHandler from '../api/admin/experience.js';
-import projectsHandler from '../api/admin/projects.js';
-import skillsHandler from '../api/admin/skills.js';
-import faqHandler from '../api/admin/faq.js';
+import loginHandler from '../api/_lib/admin/login.js';
+import logoutHandler from '../api/_lib/admin/logout.js';
+import meHandler from '../api/_lib/admin/me.js';
+import personalInfoHandler from '../api/_lib/admin/personal-info.js';
+import experienceHandler from '../api/_lib/admin/experience.js';
+import projectsHandler from '../api/_lib/admin/projects.js';
+import skillsHandler from '../api/_lib/admin/skills.js';
+import faqHandler from '../api/_lib/admin/faq.js';
 import contentHandler from '../api/content.js';
 import { close } from '../api/_lib/db.js';
 

@@ -86,6 +86,12 @@ const server = http.createServer(async (req, res) => {
     const relativeApi = pathname.replace(/^\/api\//, '');
     let apiFilePath = path.resolve(rootDir, 'api', `${relativeApi}.js`);
 
+    if (!fs.existsSync(apiFilePath) && pathname.startsWith('/api/admin/')) {
+      const route = pathname.replace(/^\/api\/admin\/?/, '');
+      req.query = { ...req.query, route };
+      apiFilePath = path.resolve(rootDir, 'api', 'admin', '[route].js');
+    }
+
     if (fs.existsSync(apiFilePath)) {
       try {
         const module = await import(`file://${apiFilePath}?t=${Date.now()}`);

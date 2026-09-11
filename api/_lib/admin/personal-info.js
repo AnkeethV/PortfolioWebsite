@@ -1,8 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { query } from '../_lib/db.js';
-import { requireAdmin } from '../_lib/auth.js';
+import { query } from '../db.js';
+import { requireAdmin } from '../auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
