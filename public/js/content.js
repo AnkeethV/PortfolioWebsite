@@ -18,6 +18,41 @@ function escapeHtml(str) {
 }
 
 /**
+ * Opens a PDF URL safely in a new tab without being blocked by browser data: URL restrictions
+ */
+export function openPdfUrl(url) {
+  if (!url) {
+    url = '/resume.pdf';
+  }
+  if (url.startsWith('data:application/pdf') || url.startsWith('data:')) {
+    try {
+      const parts = url.split(',');
+      const mimeMatch = parts[0].match(/:(.*?);/);
+      const mime = mimeMatch ? mimeMatch[1] : 'application/pdf';
+      const bstr = atob(parts[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      const blob = new Blob([u8arr], { type: mime });
+      const blobUrl = URL.createObjectURL(blob);
+      const newWin = window.open(blobUrl, '_blank');
+      if (!newWin) {
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = 'Ankeeth_V_Resume.pdf';
+        a.click();
+      }
+      return;
+    } catch (e) {
+      console.warn('Could not open PDF via blob URL:', e);
+    }
+  }
+  window.open(url.startsWith('data:') ? '/resume.pdf' : url, '_blank');
+}
+
+/**
  * Fetch portfolio data from API
  */
 export async function loadContent() {
@@ -25,7 +60,7 @@ export async function loadContent() {
   while (attempts < 2) {
     try {
       attempts++;
-      const res = await fetch('/api/content');
+      const res = await fetch(`/api/content?t=${Date.now()}`);
       if (!res.ok) {
         throw new Error(`Failed to load content: ${res.status}`);
       }
@@ -34,7 +69,20 @@ export async function loadContent() {
         throw new Error('Invalid content payload received');
       }
 
-      const { personal_info, experience, projects, skills, faq } = json.data;
+      let mergedData = { ...json.data };
+      try {
+        const rawOverrides = localStorage.getItem('portfolio_live_overrides');
+        if (rawOverrides) {
+          const overrides = JSON.parse(rawOverrides);
+          if (overrides.personal_info) mergedData.personal_info = { ...mergedData.personal_info, ...overrides.personal_info };
+          if (Array.isArray(overrides.experience) && overrides.experience.length > 0) mergedData.experience = overrides.experience;
+          if (Array.isArray(overrides.projects) && overrides.projects.length > 0) mergedData.projects = overrides.projects;
+          if (overrides.skills) mergedData.skills = overrides.skills;
+          if (Array.isArray(overrides.faq) && overrides.faq.length > 0) mergedData.faq = overrides.faq;
+        }
+      } catch (_) {}
+
+      const { personal_info, experience, projects, skills, faq } = mergedData;
 
       // Hydrate all sections
       renderPersonalInfo(personal_info);
@@ -92,9 +140,24 @@ function renderPersonalInfo(info) {
     photoEl.src = info.photo_url;
     photoEl.alt = `Photo of ${info.name || 'Ankeeth V'}`;
   }
-  if (resumeBtn && info.resume_url) {
-    resumeBtn.href = info.resume_url;
+  if (resumeBtn) {
+    const resumeUrl = info.resume_url || '/resume.pdf';
+    resumeBtn.onclick = (e) => {
+      e.preventDefault();
+      openPdfUrl(resumeUrl);
+    };
+    resumeBtn.href = resumeUrl.startsWith('data:') ? '/resume.pdf' : resumeUrl;
   }
+
+  // Also bind all other resume links (nav, footer)
+  document.querySelectorAll('a[href="/resume.pdf"]').forEach(link => {
+    link.onclick = (e) => {
+      if (info.resume_url && info.resume_url.startsWith('data:')) {
+        e.preventDefault();
+        openPdfUrl(info.resume_url);
+      }
+    };
+  });
 
   // Direct Contact links
   if (info.email) {

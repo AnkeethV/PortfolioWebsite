@@ -31,6 +31,65 @@ export function showToast(message, type = 'success') {
 }
 
 /**
+ * Opens a PDF URL safely in a new tab without being blocked by browser data: URL restrictions
+ */
+export function openPdfUrl(url) {
+  if (!url) {
+    url = '/resume.pdf';
+  }
+  if (url.startsWith('data:application/pdf') || url.startsWith('data:')) {
+    try {
+      const parts = url.split(',');
+      const mimeMatch = parts[0].match(/:(.*?);/);
+      const mime = mimeMatch ? mimeMatch[1] : 'application/pdf';
+      const bstr = atob(parts[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      const blob = new Blob([u8arr], { type: mime });
+      const blobUrl = URL.createObjectURL(blob);
+      const newWin = window.open(blobUrl, '_blank');
+      if (!newWin) {
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = 'Ankeeth_V_Resume.pdf';
+        a.click();
+      }
+      return;
+    } catch (e) {
+      console.warn('Could not open PDF via blob URL:', e);
+    }
+  }
+  window.open(url.startsWith('data:') ? '/resume.pdf' : url, '_blank');
+}
+
+/**
+ * Syncs administrative updates into client localStorage so live site reflects changes immediately
+ */
+export function syncLocalOverrides(partial = {}) {
+  try {
+    const existing = JSON.parse(localStorage.getItem('portfolio_live_overrides') || '{}');
+    const updated = {
+      ...existing,
+      ...partial
+    };
+    localStorage.setItem('portfolio_live_overrides', JSON.stringify(updated));
+  } catch (_) {}
+}
+
+export function getGroupedSkills(skillsList = allSkills) {
+  const grouped = { technical: [], tools: [], soft: [] };
+  (skillsList || []).forEach(s => {
+    const cat = (s.category || 'technical').toLowerCase();
+    if (grouped[cat]) grouped[cat].push({ id: s.id, value: s.value, sort_order: s.sort_order });
+    else grouped.technical.push({ id: s.id, value: s.value, sort_order: s.sort_order });
+  });
+  return grouped;
+}
+
+/**
  * Modal Open / Close Helpers
  */
 function openModal(id) {
@@ -125,10 +184,11 @@ async function handleLogout() {
 async function loadDashboardData() {
   try {
     // 1. Personal Info
-    const pRes = await fetch('/api/content');
+    const pRes = await fetch(`/api/admin/personal-info?t=${Date.now()}`);
     const pData = await pRes.json();
-    if (pData.success && pData.data.personal_info) {
-      hydratePersonalInfo(pData.data.personal_info);
+    if (pData.success && pData.data) {
+      syncLocalOverrides({ personal_info: pData.data });
+      hydratePersonalInfo(pData.data);
     }
 
     // 2. Load Experience, Projects, Skills, FAQ from admin endpoints
@@ -553,7 +613,13 @@ function setResume(url, name) {
   if (dropzone) dropzone.style.display = 'none';
   if (previewWrap) previewWrap.style.display = 'flex';
   if (previewName) previewName.textContent = name || url.split('/').pop() || 'resume.pdf';
-  if (viewLink) viewLink.href = url;
+  if (viewLink) {
+    viewLink.onclick = (e) => {
+      e.preventDefault();
+      openPdfUrl(url);
+    };
+    viewLink.href = url.startsWith('data:') ? '/resume.pdf' : url;
+  }
 }
 
 function clearResume() {
@@ -801,6 +867,7 @@ async function handleSavePersonalInfo(e) {
     });
     const data = await res.json();
     if (res.ok && data.success) {
+      syncLocalOverrides({ personal_info: data.data || payload });
       showToast('Personal info updated successfully!');
     } else {
       showToast(data.error || 'Failed to update personal info', 'error');
@@ -814,10 +881,11 @@ async function handleSavePersonalInfo(e) {
  * 4. Experience CRUD
  */
 async function loadExperience() {
-  const res = await fetch('/api/admin/experience');
+  const res = await fetch(`/api/admin/experience?t=${Date.now()}`);
   const data = await res.json();
   if (data.success) {
     allExperiences = data.data || [];
+    syncLocalOverrides({ experience: allExperiences });
     renderExperienceList();
   }
 }
@@ -975,10 +1043,11 @@ async function reorderExperience(index, direction) {
  * 5. Projects CRUD
  */
 async function loadProjects() {
-  const res = await fetch('/api/admin/projects');
+  const res = await fetch(`/api/admin/projects?t=${Date.now()}`);
   const data = await res.json();
   if (data.success) {
     allProjects = data.data || [];
+    syncLocalOverrides({ projects: allProjects });
     renderProjectsList();
   }
 }
@@ -1223,10 +1292,11 @@ async function reorderProjects(index, direction) {
  * 6. Skills CRUD
  */
 async function loadSkills() {
-  const res = await fetch('/api/admin/skills');
+  const res = await fetch(`/api/admin/skills?t=${Date.now()}`);
   const data = await res.json();
   if (data.success) {
     allSkills = data.data || [];
+    syncLocalOverrides({ skills: getGroupedSkills(allSkills) });
     renderSkillsList();
   }
 }
@@ -1294,10 +1364,11 @@ async function deleteSkill(id) {
  * 7. FAQ CRUD
  */
 async function loadFaq() {
-  const res = await fetch('/api/admin/faq');
+  const res = await fetch(`/api/admin/faq?t=${Date.now()}`);
   const data = await res.json();
   if (data.success) {
     allFaqs = data.data || [];
+    syncLocalOverrides({ faq: allFaqs });
     renderFaqList();
   }
 }

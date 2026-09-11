@@ -107,7 +107,9 @@ export default async function handler(req, res) {
     const faq = fRes.rows;
 
     if (personalInfo || (experience && experience.length > 0)) {
-      res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       return res.status(200).json({
         success: true,
         data: {
@@ -126,7 +128,9 @@ export default async function handler(req, res) {
   // 2. Fallback: Parse profile.md directly (zero-config, high performance, always works)
   try {
     const fallbackData = getFallbackContent();
-    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     return res.status(200).json({
       success: true,
       data: fallbackData,

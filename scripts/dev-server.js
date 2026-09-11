@@ -108,6 +108,14 @@ const server = http.createServer(async (req, res) => {
     return res.status(404).json({ error: `API route not found: ${pathname}` });
   }
 
+  // Route /resume.pdf to api/resume.js
+  if (pathname === '/resume.pdf') {
+    try {
+      const resumeModule = await import(`file://${path.resolve(rootDir, 'api/resume.js')}?t=${Date.now()}`);
+      return await resumeModule.default(req, res);
+    } catch (_) {}
+  }
+
   // Rewrite /admin to /admin/index.html if exists, or /admin.html
   let filePath = path.join(publicDir, pathname);
   if (pathname === '/admin' || pathname === '/admin/') {
