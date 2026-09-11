@@ -58,7 +58,17 @@ export async function seedDatabase(force = false) {
     }
 
     // 1. Insert Personal Info
-    const p = data.personalInfo;
+    let p = data.personalInfo || {};
+    const backupFile = path.resolve(__dirname, '../../.data/personal_info_backup.json');
+    if (fs.existsSync(backupFile)) {
+      try {
+        const saved = JSON.parse(fs.readFileSync(backupFile, 'utf-8'));
+        if (saved && saved.name) {
+          p = { ...p, ...saved };
+        }
+      } catch (_) {}
+    }
+
     await client.query(
       `INSERT INTO personal_info 
         (name, title, location, email, linkedin_url, github_url, bio, resume_url, photo_url)
@@ -75,6 +85,28 @@ export async function seedDatabase(force = false) {
         p.photo_url || '/assets/placeholder-avatar.svg'
       ]
     );
+
+    // Restore Admin Settings (master password) if available
+    const settingsFile = path.resolve(__dirname, '../../.data/admin_settings.json');
+    if (fs.existsSync(settingsFile)) {
+      try {
+        const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf-8'));
+        if (settings && settings.master_password) {
+          await client.query(`
+            CREATE TABLE IF NOT EXISTS admin_settings (
+              key VARCHAR(100) PRIMARY KEY,
+              value TEXT NOT NULL,
+              updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+          `);
+          await client.query(`
+            INSERT INTO admin_settings (key, value, updated_at)
+            VALUES ('master_password', $1, NOW())
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+          `, [settings.master_password]);
+        }
+      } catch (_) {}
+    }
 
     // 2. Insert Experience
     for (const exp of data.experience) {

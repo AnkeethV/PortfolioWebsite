@@ -1,5 +1,22 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { query } from '../_lib/db.js';
 import { requireAdmin } from '../_lib/auth.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const backupFile = path.resolve(__dirname, '../../.data/personal_info_backup.json');
+
+function saveBackup(data) {
+  try {
+    const dir = path.dirname(backupFile);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(backupFile, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Could not save personal info backup:', err.message);
+  }
+}
 
 /**
  * /api/admin/personal-info
@@ -31,15 +48,28 @@ export default async function handler(req, res) {
     if (req.method === 'PUT') {
       const b = req.body || {};
 
-      if (!b.name || !b.email) {
-        return res.status(400).json({
-          success: false,
-          error: 'Name and email are required fields.'
-        });
-      }
-
       // Check if row exists
-      const check = await query('SELECT id FROM personal_info LIMIT 1');
+      const check = await query('SELECT * FROM personal_info LIMIT 1');
+      const existing = check.rows[0] || {};
+
+      const name = (b.name !== undefined && b.name.trim()) ? b.name.trim() : (existing.name || 'Ankeeth V');
+      const email = (b.email !== undefined && b.email.trim()) ? b.email.trim() : (existing.email || 'ankeeth.v@gmail.com');
+      const title = b.title !== undefined ? b.title : (existing.title || '');
+      const location = b.location !== undefined ? b.location : (existing.location || '');
+      const linkedin_url = b.linkedin_url !== undefined ? b.linkedin_url : existing.linkedin_url;
+      const github_url = b.github_url !== undefined ? b.github_url : existing.github_url;
+      const bio = b.bio !== undefined ? b.bio : (existing.bio || '');
+
+      // Preserve existing photo_url and resume_url if not explicitly provided or if empty
+      const resume_url = (b.resume_url !== undefined && b.resume_url !== '')
+        ? b.resume_url
+        : (existing.resume_url || '/resume.pdf');
+
+      const photo_url = (b.photo_url !== undefined && b.photo_url !== '')
+        ? b.photo_url
+        : (existing.photo_url || '/assets/placeholder-avatar.svg');
+
+      let savedRecord;
       if (check.rows.length === 0) {
         // Insert new if empty
         const insertRes = await query(
@@ -47,11 +77,11 @@ export default async function handler(req, res) {
             (name, title, location, email, linkedin_url, github_url, bio, resume_url, photo_url, updated_at)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
            RETURNING *`,
-          [b.name, b.title || '', b.location || '', b.email, b.linkedin_url || null, b.github_url || null, b.bio || '', b.resume_url || '/resume.pdf', b.photo_url || '/assets/placeholder-avatar.svg']
+          [name, title, location, email, linkedin_url, github_url, bio, resume_url, photo_url]
         );
-        return res.status(200).json({ success: true, data: insertRes.rows[0] });
+        savedRecord = insertRes.rows[0];
       } else {
-        const id = check.rows[0].id;
+        const id = existing.id;
         const updateRes = await query(
           `UPDATE personal_info
            SET name = $1, title = $2, location = $3, email = $4,
@@ -59,10 +89,13 @@ export default async function handler(req, res) {
                resume_url = $8, photo_url = $9, updated_at = NOW()
            WHERE id = $10
            RETURNING *`,
-          [b.name, b.title || '', b.location || '', b.email, b.linkedin_url || null, b.github_url || null, b.bio || '', b.resume_url || '/resume.pdf', b.photo_url || '/assets/placeholder-avatar.svg', id]
+          [name, title, location, email, linkedin_url, github_url, bio, resume_url, photo_url, id]
         );
-        return res.status(200).json({ success: true, data: updateRes.rows[0] });
+        savedRecord = updateRes.rows[0];
       }
+
+      saveBackup(savedRecord);
+      return res.status(200).json({ success: true, data: savedRecord });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });

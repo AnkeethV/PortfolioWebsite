@@ -57,14 +57,6 @@ export async function resetPglite(wipeDisk = false) {
     } catch (_) {}
     pgliteInstance = null;
   }
-  if (wipeDisk) {
-    const dataDir = process.env.PG_DATA_DIR || path.resolve(__dirname, '../../.data/pglite');
-    try {
-      if (fs.existsSync(dataDir)) {
-        fs.rmSync(dataDir, { recursive: true, force: true });
-      }
-    } catch (_) {}
-  }
 }
 
 function isStaleFileError(err) {
@@ -105,16 +97,9 @@ export async function query(text, params = []) {
       };
     } catch (err) {
       if (isStaleFileError(err)) {
-        const isCorrupt = err.message && (err.message.includes('cache lookup') || err.code === 'XX000');
-        console.warn('PGlite file descriptor error detected. Resetting instance and retrying query...', { isCorrupt });
-        await resetPglite(isCorrupt);
+        console.warn('PGlite file descriptor error detected. Reconnecting client without wiping disk...', err.message);
+        await resetPglite(false);
         pglite = await getPglite();
-        if (isCorrupt) {
-          try {
-            const { seedDatabase } = await import('./seed.js');
-            await seedDatabase(false);
-          } catch (_) {}
-        }
         const res = await pglite.query(text, params);
         return {
           rows: res.rows || [],
@@ -145,9 +130,8 @@ export async function exec(sql) {
       await pglite.exec(sql);
     } catch (err) {
       if (isStaleFileError(err)) {
-        const isCorrupt = err.message && (err.message.includes('cache lookup') || err.code === 'XX000');
-        console.warn('PGlite file descriptor error in exec. Resetting instance and retrying...', { isCorrupt });
-        await resetPglite(isCorrupt);
+        console.warn('PGlite file descriptor error in exec. Reconnecting client without wiping disk...', err.message);
+        await resetPglite(false);
         pglite = await getPglite();
         await pglite.exec(sql);
         return;

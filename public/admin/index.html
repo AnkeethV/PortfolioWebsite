@@ -67,6 +67,7 @@
       <button class="admin-tab-btn" data-tab="projects">Projects</button>
       <button class="admin-tab-btn" data-tab="skills">Skills</button>
       <button class="admin-tab-btn" data-tab="faq">FAQ</button>
+      <button class="admin-tab-btn" data-tab="security">Security</button>
     </nav>
 
     <!-- Main Content Panels -->
@@ -114,12 +115,61 @@
 
             <div class="form-grid-2">
               <div class="form-group">
-                <label for="p-resume" class="form-label">Resume URL (e.g. /resume.pdf)</label>
-                <input type="text" id="p-resume" class="form-input">
+                <label class="form-label">Profile Photo (JPEG / PNG)</label>
+                <input type="hidden" id="p-photo">
+                <div class="media-upload-container">
+                  <div id="photo-dropzone" class="upload-dropzone">
+                    <input type="file" id="photo-file-input" accept=".jpg,.jpeg,.png,image/jpeg,image/png" hidden>
+                    <div class="upload-dropzone-content">
+                      <div class="upload-icon">📷</div>
+                      <div class="upload-text">
+                        <span class="upload-action-text">Click to upload photo</span> or drag & drop
+                      </div>
+                      <span class="upload-hint">JPEG or PNG format (up to 15MB)</span>
+                    </div>
+                  </div>
+                  <div id="photo-preview-wrap" class="media-preview-card" style="display: none;">
+                    <img id="photo-preview-img" src="" alt="Profile Photo Preview" class="media-preview-img">
+                    <div class="media-preview-meta">
+                      <div id="photo-preview-name" class="media-preview-name">photo.jpg</div>
+                      <div class="media-preview-actions">
+                        <button type="button" id="btn-change-photo" class="btn-xs-outline">Change</button>
+                        <button type="button" id="btn-remove-photo" class="btn-xs-danger">Remove</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
+
               <div class="form-group">
-                <label for="p-photo" class="form-label">Photo URL</label>
-                <input type="text" id="p-photo" class="form-input">
+                <label class="form-label">Resume Document (PDF)</label>
+                <input type="hidden" id="p-resume">
+                <div class="media-upload-container">
+                  <div id="resume-dropzone" class="upload-dropzone">
+                    <input type="file" id="resume-file-input" accept=".pdf,application/pdf" hidden>
+                    <div class="upload-dropzone-content">
+                      <div class="upload-icon">📄</div>
+                      <div class="upload-text">
+                        <span class="upload-action-text">Click to upload resume</span> or drag & drop
+                      </div>
+                      <span class="upload-hint">PDF format only (up to 20MB)</span>
+                    </div>
+                  </div>
+                  <div id="resume-preview-wrap" class="media-preview-card" style="display: none;">
+                    <div class="media-preview-pdf-badge">
+                      <span class="pdf-icon">📄</span>
+                      <span class="pdf-tag">PDF</span>
+                    </div>
+                    <div class="media-preview-meta">
+                      <div id="resume-preview-name" class="media-preview-name">resume.pdf</div>
+                      <div class="media-preview-actions">
+                        <a id="resume-view-link" href="#" target="_blank" rel="noopener noreferrer" class="btn-xs-outline">View PDF ↗</a>
+                        <button type="button" id="btn-change-resume" class="btn-xs-outline">Change</button>
+                        <button type="button" id="btn-remove-resume" class="btn-xs-danger">Remove</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -212,6 +262,50 @@
         </div>
       </section>
 
+      <!-- Panel 6: Security & Master Password -->
+      <section id="panel-security" class="tab-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Master Password & Security</h2>
+        </div>
+        <div class="panel-card" style="max-width: 580px;">
+          <p style="color: var(--color-text-secondary); font-size: var(--text-sm); margin-bottom: 24px;">
+            Change your administrative master password. Once updated, all subsequent logins and protected operations will require the new password.
+          </p>
+
+          <div id="password-alert" class="alert-banner" role="alert"></div>
+
+          <form id="form-reset-password">
+            <div class="form-group">
+              <label for="pwd-current" class="form-label">Current Master Password</label>
+              <div class="input-with-toggle">
+                <input type="password" id="pwd-current" class="form-input" required autocomplete="current-password" placeholder="Enter current master password">
+                <button type="button" class="btn-pwd-toggle" data-target="pwd-current" aria-label="Toggle password visibility">👁️</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="pwd-new" class="form-label">New Master Password</label>
+              <div class="input-with-toggle">
+                <input type="password" id="pwd-new" class="form-input" required minlength="6" autocomplete="new-password" placeholder="Minimum 6 characters">
+                <button type="button" class="btn-pwd-toggle" data-target="pwd-new" aria-label="Toggle password visibility">👁️</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="pwd-confirm" class="form-label">Confirm New Password</label>
+              <div class="input-with-toggle">
+                <input type="password" id="pwd-confirm" class="form-input" required minlength="6" autocomplete="new-password" placeholder="Re-type new password">
+                <button type="button" class="btn-pwd-toggle" data-target="pwd-confirm" aria-label="Toggle password visibility">👁️</button>
+              </div>
+            </div>
+
+            <button type="submit" id="btn-save-password" class="btn-full" style="max-width: 240px; margin-top: 12px;">
+              Reset Master Password
+            </button>
+          </form>
+        </div>
+      </section>
+
     </main>
   </div>
 
@@ -263,42 +357,274 @@
 
   <!-- Project Modal -->
   <div id="modal-project" class="admin-modal-backdrop">
-    <div class="admin-modal-card">
+    <div class="admin-modal-card modal-card-wide">
       <div class="modal-header-bar">
-        <h3 id="modal-project-title" class="modal-title">Add Project</h3>
+        <h3 id="modal-project-title" class="modal-title">Edit Project</h3>
         <button type="button" class="btn-icon modal-close" aria-label="Close modal">✕</button>
       </div>
       <form id="form-project">
         <input type="hidden" id="proj-id">
+
+        <!-- Row 1: Project Type -->
         <div class="form-group">
-          <label for="proj-name" class="form-label">Project Name</label>
-          <input type="text" id="proj-name" class="form-input" required>
+          <label for="proj-type" class="form-label">Project Type</label>
+          <select id="proj-type" class="form-input form-select">
+            <option value="Excel">Excel</option>
+            <option value="Power BI">Power BI</option>
+            <option value="Tableau">Tableau</option>
+            <option value="Python">Python</option>
+            <option value="SQL">SQL</option>
+            <option value="Machine Learning">Machine Learning</option>
+            <option value="Data Analytics">Data Analytics</option>
+            <option value="Full Stack">Full Stack</option>
+            <option value="Other">Other</option>
+          </select>
         </div>
+
+        <!-- Row 2: Domain / Function -->
         <div class="form-group">
-          <label for="proj-desc" class="form-label">Description / Summary</label>
-          <textarea id="proj-desc" class="form-textarea" rows="4" required></textarea>
+          <label for="proj-domain" class="form-label">Domain/Function</label>
+          <input type="text" id="proj-domain" class="form-input" placeholder="e.g. FMCG/Sales & Finance">
         </div>
+
+        <!-- Row 3: Other Tools -->
         <div class="form-group">
-          <label for="proj-tags" class="form-label">Tech Tags (comma separated, e.g. SQL, Power BI, DAX)</label>
-          <input type="text" id="proj-tags" class="form-input" placeholder="SQL, Power BI, DAX">
+          <label for="proj-other-tools" class="form-label">Other Tools:</label>
+          <input type="text" id="proj-other-tools" class="form-input" placeholder="e.g. Excel, Power Query, DAX">
         </div>
+
+        <!-- Row 4: Project Title -->
+        <div class="form-group">
+          <label for="proj-name" class="form-label">Project Title</label>
+          <input type="text" id="proj-name" class="form-input" placeholder="e.g. Sales and Finance Analytics">
+        </div>
+
+        <!-- Row 5: Project Short Info -->
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <label for="proj-short-info" class="form-label">Project Short Info <span class="label-hint">(Min 150, Max 300 characters)</span></label>
+            <span id="proj-short-info-count" class="char-counter">0 / 300</span>
+          </div>
+          <textarea id="proj-short-info" class="form-textarea" rows="3" maxlength="300" placeholder="Brief summary of the project, key objectives, and business impact..."></textarea>
+        </div>
+
+        <!-- Row 6: Project Thumbnail -->
+        <div class="form-group">
+          <label class="form-label">Project Thumbnail <span class="label-hint">(Only JPG or PNG, max 2 MB, 1600×900px)</span></label>
+          <input type="hidden" id="proj-thumb" value="/assets/placeholder-avatar.svg">
+          <div class="media-upload-container">
+            <div id="proj-thumb-dropzone" class="upload-dropzone">
+              <input type="file" id="proj-thumb-file-input" accept=".jpg,.jpeg,.png,image/jpeg,image/png" hidden>
+              <div class="upload-dropzone-content">
+                <div class="upload-icon">🖼️</div>
+                <div class="upload-text">
+                  <span class="upload-action-text">Choose File</span> <span id="proj-thumb-filename-label" class="upload-secondary-text">No file chosen</span>
+                </div>
+                <span class="upload-hint">Only JPG or PNG, max 2 MB, 1600×900px</span>
+              </div>
+            </div>
+            <div id="proj-thumb-preview-wrap" class="media-preview-card" style="display: none;">
+              <img id="proj-thumb-preview-img" src="" alt="Thumbnail Preview" class="media-preview-img">
+              <div class="media-preview-meta">
+                <div id="proj-thumb-preview-name" class="media-preview-name">thumbnail.jpg</div>
+                <div class="media-preview-actions">
+                  <button type="button" id="btn-change-proj-thumb" class="btn-xs-outline">Change</button>
+                  <button type="button" id="btn-remove-proj-thumb" class="btn-xs-danger">Remove</button>
+                </div>
+              </div>
+            </div>
+            <div id="proj-thumb-uploaded-row" class="uploaded-row" style="display: none;">
+              <span>Uploaded thumbnail: <a id="proj-thumb-eye-link" href="#" target="_blank" rel="noopener" class="eye-badge" title="View uploaded thumbnail">👁</a></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 7: Project Description -->
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <label for="proj-desc" class="form-label">Project Description <span class="label-hint">(Max 1000 characters)</span></label>
+            <span id="proj-desc-count" class="char-counter">0 / 1000</span>
+          </div>
+          <textarea id="proj-desc" class="form-textarea" rows="4" maxlength="1000" placeholder="Detailed project description, methodology, business insights and outcomes..."></textarea>
+        </div>
+
+        <!-- Row 8: Screenshots (2 Columns) -->
+        <div class="form-grid-2">
+          <!-- Screenshot 1 -->
+          <div class="form-group">
+            <label class="form-label">Project Screenshot 1 <span class="label-hint">(Only JPG or PNG, max 2 MB, 1600×900px)</span></label>
+            <input type="hidden" id="proj-screenshot1">
+            <div class="media-upload-container">
+              <div id="proj-s1-dropzone" class="upload-dropzone">
+                <input type="file" id="proj-s1-file-input" accept=".jpg,.jpeg,.png,image/jpeg,image/png" hidden>
+                <div class="upload-dropzone-content">
+                  <div class="upload-icon">📷</div>
+                  <div class="upload-text">
+                    <span class="upload-action-text">Choose File</span> <span id="proj-s1-filename-label" class="upload-secondary-text">No file chosen</span>
+                  </div>
+                  <span class="upload-hint">Only JPG or PNG, max 2 MB</span>
+                </div>
+              </div>
+              <div id="proj-s1-preview-wrap" class="media-preview-card" style="display: none;">
+                <img id="proj-s1-preview-img" src="" alt="Screenshot 1 Preview" class="media-preview-img">
+                <div class="media-preview-meta">
+                  <div id="proj-s1-preview-name" class="media-preview-name">screenshot1.jpg</div>
+                  <div class="media-preview-actions">
+                    <button type="button" id="btn-change-proj-s1" class="btn-xs-outline">Change</button>
+                    <button type="button" id="btn-remove-proj-s1" class="btn-xs-danger">Remove</button>
+                  </div>
+                </div>
+              </div>
+              <div id="proj-s1-uploaded-row" class="uploaded-row" style="display: none;">
+                <span>Uploaded screenshot: <a id="proj-s1-eye-link" href="#" target="_blank" rel="noopener" class="eye-badge" title="View uploaded screenshot 1">👁</a></span>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                <label for="proj-s1-desc" class="form-label">Screenshot Description <span class="label-hint">(Max 255 characters)</span></label>
+                <span id="proj-s1-desc-count" class="char-counter">0 / 255</span>
+              </div>
+              <textarea id="proj-s1-desc" class="form-textarea" rows="2" maxlength="255" placeholder="e.g. Customer Performance Report: Net Sales Performance for the Customers"></textarea>
+            </div>
+          </div>
+
+          <!-- Screenshot 2 -->
+          <div class="form-group">
+            <label class="form-label">Project Screenshot 2 <span class="label-hint">(Only JPG or PNG, max 2 MB, 1600×900px)</span></label>
+            <input type="hidden" id="proj-screenshot2">
+            <div class="media-upload-container">
+              <div id="proj-s2-dropzone" class="upload-dropzone">
+                <input type="file" id="proj-s2-file-input" accept=".jpg,.jpeg,.png,image/jpeg,image/png" hidden>
+                <div class="upload-dropzone-content">
+                  <div class="upload-icon">📷</div>
+                  <div class="upload-text">
+                    <span class="upload-action-text">Choose File</span> <span id="proj-s2-filename-label" class="upload-secondary-text">No file chosen</span>
+                  </div>
+                  <span class="upload-hint">Only JPG or PNG, max 2 MB</span>
+                </div>
+              </div>
+              <div id="proj-s2-preview-wrap" class="media-preview-card" style="display: none;">
+                <img id="proj-s2-preview-img" src="" alt="Screenshot 2 Preview" class="media-preview-img">
+                <div class="media-preview-meta">
+                  <div id="proj-s2-preview-name" class="media-preview-name">screenshot2.jpg</div>
+                  <div class="media-preview-actions">
+                    <button type="button" id="btn-change-proj-s2" class="btn-xs-outline">Change</button>
+                    <button type="button" id="btn-remove-proj-s2" class="btn-xs-danger">Remove</button>
+                  </div>
+                </div>
+              </div>
+              <div id="proj-s2-uploaded-row" class="uploaded-row" style="display: none;">
+                <span>Uploaded screenshot: <a id="proj-s2-eye-link" href="#" target="_blank" rel="noopener" class="eye-badge" title="View uploaded screenshot 2">👁</a></span>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                <label for="proj-s2-desc" class="form-label">Screenshot Description <span class="label-hint">(Max 255 characters)</span></label>
+                <span id="proj-s2-desc-count" class="char-counter">0 / 255</span>
+              </div>
+              <textarea id="proj-s2-desc" class="form-textarea" rows="2" maxlength="255" placeholder="e.g. Market Performance V/S Target"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 9: Video Link & PowerBI Link (2 Columns) -->
         <div class="form-grid-2">
           <div class="form-group">
-            <label for="proj-thumb" class="form-label">Thumbnail URL</label>
-            <input type="text" id="proj-thumb" class="form-input" placeholder="/assets/placeholder-avatar.svg">
+            <label for="proj-video-link" class="form-label">Project Video Link</label>
+            <input type="text" id="proj-video-link" class="form-input" placeholder="Enter Your Video url">
+
+            <!-- Video demo file upload -->
+            <div style="margin-top: 10px;">
+              <label class="form-label" style="font-size: 11px; color: var(--color-text-muted);">Or Upload Video Demo File (MP4, WebM, OGG, MOV)</label>
+              <input type="hidden" id="proj-video">
+              <div class="media-upload-container">
+                <div id="proj-video-dropzone" class="upload-dropzone upload-dropzone-compact">
+                  <input type="file" id="proj-video-file-input" accept=".mp4,.webm,.ogg,.mov,.mkv,video/mp4,video/webm,video/ogg,video/quicktime" hidden>
+                  <div class="upload-dropzone-content">
+                    <div class="upload-icon">🎥</div>
+                    <div class="upload-text">
+                      <span class="upload-action-text">Upload Video</span> or drag & drop
+                    </div>
+                    <span class="upload-hint">MP4, WebM, OGG, MOV (up to 100MB)</span>
+                  </div>
+                </div>
+                <div id="proj-video-preview-wrap" class="media-preview-card video-card" style="display: none;">
+                  <video id="proj-video-preview-player" controls playsinline class="media-preview-video"></video>
+                  <div class="media-preview-meta">
+                    <div id="proj-video-preview-name" class="media-preview-name">demo.mp4</div>
+                    <div class="media-preview-actions">
+                      <button type="button" id="btn-change-proj-video" class="btn-xs-outline">Change</button>
+                      <button type="button" id="btn-remove-proj-video" class="btn-xs-danger">Remove</button>
+                    </div>
+                  </div>
+                </div>
+                <div id="proj-video-upload-status" class="upload-status-indicator" style="display: none;">
+                  <span class="spinner-small"></span>
+                  <span id="proj-video-upload-text">Uploading video...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <label for="proj-powerbi" class="form-label">Live PowerBI Dashboard Link</label>
+              <a href="https://learn.microsoft.com/en-us/power-bi/collaborate-share/service-publish-to-web" target="_blank" rel="noopener noreferrer" class="label-hint-link" title="Learn how to publish Power BI to web">(How to get the link?)</a>
+            </div>
+            <input type="text" id="proj-powerbi" class="form-input" placeholder="Not Applicable">
+
+            <div class="form-group" style="margin-top: 14px;">
+              <label for="proj-tags" class="form-label">Tech Tags <span class="label-hint">(comma separated, e.g. SQL, Power BI, DAX)</span></label>
+              <input type="text" id="proj-tags" class="form-input" placeholder="ChatGPT, Claude, Antigravity">
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 10: LinkedIn Post & GitHub Link (2 Columns) -->
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="proj-linkedin" class="form-label">LinkedIn Post link</label>
+            <input type="url" id="proj-linkedin" class="form-input" placeholder="https://www.linkedin.com/feed/update/...">
           </div>
           <div class="form-group">
-            <label for="proj-link" class="form-label">External / GitHub Link</label>
-            <input type="url" id="proj-link" class="form-input" placeholder="https://github.com/...">
+            <label for="proj-github" class="form-label">Project GitHub Link</label>
+            <input type="url" id="proj-github" class="form-input" placeholder="https://github.com/...">
           </div>
         </div>
-        <div class="form-group">
-          <label for="proj-video" class="form-label">Video Demo URL (Optional)</label>
-          <input type="url" id="proj-video" class="form-input" placeholder="https://...">
+
+        <!-- Row 11: Project Platform Name & Project Link (2 Columns) -->
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="proj-platform" class="form-label">Project Platform Name</label>
+            <input type="text" id="proj-platform" class="form-input" placeholder="Enter Project Platform">
+          </div>
+          <div class="form-group">
+            <label for="proj-link" class="form-label">Project Link</label>
+            <input type="url" id="proj-link" class="form-input" placeholder="Enter Project Link">
+          </div>
         </div>
-        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
-          <button type="button" class="btn-outline modal-close">Cancel</button>
-          <button type="submit" class="btn-full" style="width: auto; padding: 10px 24px;">Save Project</button>
+
+        <!-- Row 12: Show Project on Portfolio (Radio) -->
+        <div class="form-group" style="margin-top: 6px; margin-bottom: 24px;">
+          <label class="form-label" style="margin-bottom: 8px;">Show Project on Portfolio</label>
+          <div class="radio-row">
+            <label class="radio-label">
+              <input type="radio" name="proj-visible" id="proj-visible-yes" value="true" checked>
+              <span class="radio-custom"></span>
+              <span>Yes</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="proj-visible" id="proj-visible-no" value="false">
+              <span class="radio-custom"></span>
+              <span>No</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div class="modal-footer-bar">
+          <button type="button" class="btn-outline modal-close">Close</button>
+          <button type="submit" class="btn-save-changes">Save changes</button>
         </div>
       </form>
     </div>
@@ -326,6 +652,63 @@
           <button type="submit" class="btn-full" style="width: auto; padding: 10px 24px;">Save FAQ</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Image Cropper Modal -->
+  <div id="modal-image-cropper" class="admin-modal-backdrop">
+    <div class="admin-modal-card cropper-modal-card">
+      <div class="modal-header-bar">
+        <h3 id="modal-cropper-title" class="modal-title">Crop & Position Image</h3>
+        <button type="button" class="btn-icon modal-close" id="btn-cropper-close" aria-label="Close cropper">✕</button>
+      </div>
+
+      <div class="cropper-body">
+        <p class="cropper-instructions">Drag the image to adjust framing. Use the slider or mouse wheel to zoom.</p>
+
+        <!-- Stage Viewport -->
+        <div class="cropper-stage-wrapper">
+          <div id="cropper-stage" class="cropper-stage">
+            <canvas id="cropper-canvas"></canvas>
+            <!-- Overlay Guide Box -->
+            <div id="cropper-guide-box" class="cropper-guide-box">
+              <div class="cropper-grid-lines"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controls Toolbar -->
+        <div class="cropper-controls-bar">
+          <!-- Zoom Slider -->
+          <div class="cropper-control-group">
+            <span class="cropper-label">Zoom:</span>
+            <button type="button" id="btn-crop-zoom-out" class="btn-icon-sm" title="Zoom Out">−</button>
+            <input type="range" id="cropper-zoom-slider" min="1" max="3" step="0.02" value="1" class="cropper-slider">
+            <button type="button" id="btn-crop-zoom-in" class="btn-icon-sm" title="Zoom In">+</button>
+          </div>
+
+          <!-- Aspect Ratio Options -->
+          <div class="cropper-control-group" id="cropper-ratio-group">
+            <span class="cropper-label">Ratio:</span>
+            <div class="cropper-ratio-buttons">
+              <button type="button" class="btn-ratio-chip active" data-ratio="1:1">1:1</button>
+              <button type="button" class="btn-ratio-chip" data-ratio="16:9">16:9</button>
+              <button type="button" class="btn-ratio-chip" data-ratio="4:3">4:3</button>
+            </div>
+          </div>
+
+          <!-- Rotate & Reset -->
+          <div class="cropper-control-group">
+            <button type="button" id="btn-crop-rotate" class="btn-outline btn-sm" title="Rotate 90°">↻ Rotate</button>
+            <button type="button" id="btn-crop-reset" class="btn-outline btn-sm" title="Reset View">↺ Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cropper-footer">
+        <button type="button" class="btn-outline modal-close" id="btn-crop-cancel">Cancel</button>
+        <button type="button" id="btn-crop-apply" class="btn-full" style="width: auto; padding: 10px 28px;">Crop & Upload</button>
+      </div>
     </div>
   </div>
 

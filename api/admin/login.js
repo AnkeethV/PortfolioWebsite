@@ -20,7 +20,8 @@ export default async function handler(req, res) {
 
   const { password } = req.body || {};
 
-  if (!validatePassword(password)) {
+  const isValid = await validatePassword(password);
+  if (!isValid) {
     return res.status(401).json({
       success: false,
       error: 'Invalid password. Access denied.'

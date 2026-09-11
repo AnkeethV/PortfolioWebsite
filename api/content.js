@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     }));
 
     // 3. Fetch Projects
-    const projRes = await query('SELECT id, name, description, tech_tags, thumbnail_url, video_url, external_link, sort_order FROM projects ORDER BY sort_order ASC, id ASC');
+    const projRes = await query('SELECT * FROM projects WHERE is_visible IS NOT FALSE ORDER BY sort_order ASC, id ASC');
     const projects = projRes.rows.map(row => ({
       ...row,
       tech_tags: typeof row.tech_tags === 'string' ? JSON.parse(row.tech_tags) : (row.tech_tags || [])

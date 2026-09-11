@@ -1,8 +1,53 @@
 import jwt from 'jsonwebtoken';
 import cookie from 'cookie';
 import dotenv from 'dotenv';
+import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { query } from './db.js';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const settingsFilePath = path.resolve(__dirname, '../../.data/admin_settings.json');
+
+function readLocalSettings() {
+  try {
+    if (fs.existsSync(settingsFilePath)) {
+      const content = fs.readFileSync(settingsFilePath, 'utf-8');
+      return JSON.parse(content);
+    }
+  } catch (_) {}
+  return {};
+}
+
+function writeLocalSettings(data) {
+  try {
+    const dir = path.dirname(settingsFilePath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const existing = readLocalSettings();
+    const merged = { ...existing, ...data, updated_at: new Date().toISOString() };
+    fs.writeFileSync(settingsFilePath, JSON.stringify(merged, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Could not write admin_settings.json:', err.message);
+  }
+}
+
+function verifyHash(password, stored) {
+  if (!stored) return false;
+  if (stored.includes(':')) {
+    const [salt, key] = stored.split(':');
+    const hashedBuffer = crypto.scryptSync(password, salt, 64);
+    const keyBuffer = Buffer.from(key, 'hex');
+    if (hashedBuffer.length === keyBuffer.length && crypto.timingSafeEqual(hashedBuffer, keyBuffer)) {
+      return true;
+    }
+    return false;
+  }
+  return password === stored;
+}
 
 const JWT_SECRET = process.env.JWT_SECRET || 'ankeeth-portfolio-jwt-secret-key-2026';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
@@ -10,11 +55,87 @@ const COOKIE_NAME = 'admin_token';
 const TOKEN_EXPIRY_SECONDS = 86400; // 24 hours
 
 /**
- * Validate submitted password against ADMIN_PASSWORD
+ * Validate submitted password against DB stored hash, local file backup, or ADMIN_PASSWORD fallback
  */
-export function validatePassword(password) {
+export async function validatePassword(password) {
   if (!password || typeof password !== 'string') return false;
+
+  // 1. Try DB admin_settings
+  try {
+    const res = await query("SELECT value FROM admin_settings WHERE key = 'master_password' LIMIT 1");
+    if (res && res.rows && res.rows.length > 0 && res.rows[0].value) {
+      return verifyHash(password, res.rows[0].value);
+    }
+  } catch (_) {
+    // If table doesn't exist yet or connection issue, fall through
+  }
+
+  // 2. Try file-backed persistent settings (.data/admin_settings.json)
+  const localSettings = readLocalSettings();
+  if (localSettings && localSettings.master_password) {
+    const matched = verifyHash(password, localSettings.master_password);
+    if (matched) {
+      // Sync back into DB if DB was restarted
+      try {
+        await query(`
+          CREATE TABLE IF NOT EXISTS admin_settings (
+            key VARCHAR(100) PRIMARY KEY,
+            value TEXT NOT NULL,
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        await query(
+          `INSERT INTO admin_settings (key, value, updated_at)
+           VALUES ('master_password', $1, NOW())
+           ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+          [localSettings.master_password]
+        );
+      } catch (_) {}
+      return true;
+    }
+    return false;
+  }
+
+  // 3. Fallback to default
   return password === ADMIN_PASSWORD;
+}
+
+/**
+ * Hash and persist a new master password into both admin_settings table and local file
+ */
+export async function setMasterPassword(newPassword) {
+  if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
+    throw new Error('New password must be at least 6 characters long.');
+  }
+
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(newPassword, salt, 64).toString('hex');
+  const storedValue = `${salt}:${hash}`;
+
+  // 1. Persist to file immediately
+  writeLocalSettings({ master_password: storedValue });
+
+  // 2. Persist to DB
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_settings (
+        key VARCHAR(100) PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await query(
+      `INSERT INTO admin_settings (key, value, updated_at)
+       VALUES ('master_password', $1, NOW())
+       ON CONFLICT (key)
+       DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+      [storedValue]
+    );
+  } catch (err) {
+    console.warn('Could not persist master password to DB (persisted to file):', err.message);
+  }
+
+  return true;
 }
 
 /**
@@ -111,6 +232,7 @@ export function requireAdmin(req, res) {
 
 export default {
   validatePassword,
+  setMasterPassword,
   generateToken,
   serializeAuthCookie,
   clearAuthCookie,
@@ -118,3 +240,4 @@ export default {
   verifyToken,
   requireAdmin
 };
+
