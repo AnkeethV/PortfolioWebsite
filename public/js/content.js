@@ -254,20 +254,13 @@ function renderProjects(projects) {
     const tagsHtml = tags.slice(0, 3).map(t => `<span class="tag-chip">${escapeHtml(t)}</span>`).join('');
     const extraCount = tags.length > 3 ? `<span class="tag-chip">+${tags.length - 3}</span>` : '';
 
-    const typeBadge = proj.project_type || proj.domain
-      ? `<span style="font-size: 11px; font-weight: 700; color: var(--color-accent); text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; margin-bottom: 6px;">${escapeHtml(proj.project_type || proj.domain)}</span>`
-      : '';
-    const summaryText = proj.short_info || proj.description;
-
     return `
       <div class="project-card" data-project-index="${idx}" tabindex="0" role="button" aria-label="View details for ${escapeHtml(proj.name)}">
         <div class="project-thumbnail-wrapper">
           <img class="project-thumbnail-img" src="${proj.thumbnail_url || '/assets/placeholder-avatar.svg'}" alt="${escapeHtml(proj.name)}" loading="lazy">
         </div>
         <div class="project-card-body">
-          ${typeBadge}
           <h3 class="project-title">${escapeHtml(proj.name)}</h3>
-          <p class="project-desc-short">${escapeHtml(summaryText)}</p>
           <div class="project-tags-list">
             ${tagsHtml} ${extraCount}
           </div>
