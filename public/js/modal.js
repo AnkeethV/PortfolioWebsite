@@ -15,13 +15,23 @@ export function openProjectModal(project) {
   lastFocusedElement = document.activeElement;
   activeModal = modal;
 
-  // Category & Domain badges
+  // Category & Project type badge
   let badgesHtml = '';
-  if (project.project_type || project.domain) {
+  if (project.project_type) {
     badgesHtml = `
-      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
-        ${project.project_type ? `<span class="badge-pill" style="background: rgba(242, 183, 5, 0.15); color: #F2B705; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em;">${escapeHtml(project.project_type)}</span>` : ''}
-        ${project.domain ? `<span class="badge-pill" style="background: rgba(255, 255, 255, 0.08); color: var(--color-text-secondary); font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 9999px;">${escapeHtml(project.domain)}</span>` : ''}
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+        <span class="badge-pill" style="background: rgba(242, 183, 5, 0.15); color: #F2B705; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em;">${escapeHtml(project.project_type)}</span>
+      </div>
+    `;
+  }
+
+  // Domain/Function line
+  let domainHtml = '';
+  if (project.domain) {
+    domainHtml = `
+      <div style="font-size: 13.5px; margin-bottom: 14px; color: var(--color-text-secondary);">
+        <strong style="color: var(--color-text-muted);">Domain/Function:</strong>
+        <span style="color: #10b981; font-weight: 600; margin-left: 4px;">${escapeHtml(project.domain)}</span>
       </div>
     `;
   }
@@ -39,33 +49,41 @@ export function openProjectModal(project) {
     .map(tag => `<span class="tag-chip">${escapeHtml(tag)}</span>`)
     .join('');
 
-  // Screenshots Gallery
-  let screenshotsHtml = '';
-  const hasS1 = Boolean(project.screenshot1_url);
-  const hasS2 = Boolean(project.screenshot2_url);
+  // Collect Screenshots
+  const screenshots = [];
+  if (project.screenshot1_url) {
+    screenshots.push({ url: project.screenshot1_url, desc: project.screenshot1_desc || '' });
+  }
+  if (project.screenshot2_url) {
+    screenshots.push({ url: project.screenshot2_url, desc: project.screenshot2_desc || '' });
+  }
 
-  if (hasS1 || hasS2) {
-    screenshotsHtml = `
-      <div style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
-        <h4 class="modal-section-title">Project Screenshots</h4>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 10px;">
-          ${hasS1 ? `
-            <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; overflow: hidden;">
-              <a href="${escapeHtml(project.screenshot1_url)}" target="_blank" rel="noopener noreferrer" title="Click to view full image">
-                <img src="${escapeHtml(project.screenshot1_url)}" alt="Screenshot 1" style="width: 100%; height: 160px; object-fit: cover; display: block; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-              </a>
-              ${project.screenshot1_desc ? `<p style="padding: 10px 12px; font-size: 12px; color: var(--color-text-secondary); line-height: 1.4; margin: 0;">${escapeHtml(project.screenshot1_desc)}</p>` : ''}
-            </div>
+  let screenshotColumnHtml = '';
+  if (screenshots.length > 0) {
+    screenshotColumnHtml = `
+      <div class="modal-carousel-wrapper">
+        <div class="modal-carousel-container">
+          ${screenshots.length > 1 ? `
+            <button type="button" class="modal-carousel-arrow prev" id="modal-carousel-prev" aria-label="Previous screenshot">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
           ` : ''}
-          ${hasS2 ? `
-            <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; overflow: hidden;">
-              <a href="${escapeHtml(project.screenshot2_url)}" target="_blank" rel="noopener noreferrer" title="Click to view full image">
-                <img src="${escapeHtml(project.screenshot2_url)}" alt="Screenshot 2" style="width: 100%; height: 160px; object-fit: cover; display: block; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-              </a>
-              ${project.screenshot2_desc ? `<p style="padding: 10px 12px; font-size: 12px; color: var(--color-text-secondary); line-height: 1.4; margin: 0;">${escapeHtml(project.screenshot2_desc)}</p>` : ''}
-            </div>
+
+          <div class="modal-carousel-slide">
+            <a id="modal-screenshot-link" href="${escapeHtml(screenshots[0].url)}" target="_blank" rel="noopener noreferrer" title="Click to view full image">
+              <img id="modal-screenshot-img" src="${escapeHtml(screenshots[0].url)}" alt="${escapeHtml(project.name)} Screenshot" class="modal-carousel-img">
+            </a>
+          </div>
+
+          ${screenshots.length > 1 ? `
+            <button type="button" class="modal-carousel-arrow next" id="modal-carousel-next" aria-label="Next screenshot">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
           ` : ''}
         </div>
+        <p id="modal-screenshot-caption" class="modal-screenshot-caption" style="${screenshots[0].desc ? '' : 'display: none;'}">
+          ${escapeHtml(screenshots[0].desc)}
+        </p>
       </div>
     `;
   }
@@ -140,29 +158,76 @@ export function openProjectModal(project) {
   }
 
   modalContent.innerHTML = `
-    ${badgesHtml}
-    <h2 class="modal-project-title">${escapeHtml(project.name)}</h2>
-    
-    ${project.short_info ? `<p style="font-size: 15px; line-height: 1.6; color: var(--color-text-primary); font-weight: 500; margin-bottom: 16px; border-left: 3px solid var(--color-accent); padding-left: 14px;">${escapeHtml(project.short_info)}</p>` : ''}
-    
-    <p class="modal-project-desc" style="white-space: pre-line;">${escapeHtml(project.description)}</p>
+    <div class="modal-hero-grid ${screenshots.length === 0 ? 'single-col' : ''}">
+      <div class="modal-hero-info">
+        ${badgesHtml}
+        <h2 class="modal-project-title">${escapeHtml(project.name)}</h2>
+        ${domainHtml}
+        
+        ${project.short_info ? `<p style="font-size: 14.5px; line-height: 1.6; color: var(--color-text-secondary); margin-bottom: 20px;">${escapeHtml(project.short_info)}</p>` : ''}
+        
+        ${actionButtons.length > 0 ? `<div class="modal-actions" style="margin-top: 16px;">${actionButtons.join('')}</div>` : ''}
+      </div>
 
-    ${screenshotsHtml}
+      ${screenshotColumnHtml}
+    </div>
 
-    <div style="margin-bottom: 1.5rem;">
-      <h4 class="modal-section-title">Technologies & Tools</h4>
-      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-        ${tagsHtml || '<span class="tag-chip">Analytics</span>'}
+    <div class="modal-details-section" style="margin-top: 32px; border-top: 1px solid var(--color-border); padding-top: 24px;">
+      <h3 style="font-size: 1.35rem; font-weight: 700; color: var(--color-text-primary); margin-bottom: 12px; letter-spacing: -0.01em;">Project Details</h3>
+      
+      <p class="modal-project-desc" style="white-space: pre-line; margin-bottom: 24px;">${escapeHtml(project.description)}</p>
+
+      <div style="margin-bottom: 1.5rem;">
+        <h4 class="modal-section-title">Technologies & Tools</h4>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          ${tagsHtml || '<span class="tag-chip">Analytics</span>'}
+        </div>
+      </div>
+
+      ${videoHtml}
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 24px;">
+        <button class="btn-pill btn-secondary" id="modal-cancel-btn">Close</button>
       </div>
     </div>
-
-    ${videoHtml}
-
-    <div class="modal-actions" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px;">
-      ${actionButtons.join('')}
-      <button class="btn-pill btn-secondary" id="modal-cancel-btn">Close</button>
-    </div>
   `;
+
+  // Bind carousel navigation
+  let currentSlide = 0;
+  if (screenshots.length > 1) {
+    const prevBtn = document.getElementById('modal-carousel-prev');
+    const nextBtn = document.getElementById('modal-carousel-next');
+    const imgEl = document.getElementById('modal-screenshot-img');
+    const linkEl = document.getElementById('modal-screenshot-link');
+    const capEl = document.getElementById('modal-screenshot-caption');
+
+    const updateSlide = (idx) => {
+      currentSlide = (idx + screenshots.length) % screenshots.length;
+      const s = screenshots[currentSlide];
+      if (imgEl) imgEl.src = s.url;
+      if (linkEl) linkEl.href = s.url;
+      if (capEl) {
+        capEl.textContent = s.desc;
+        capEl.style.display = s.desc ? 'block' : 'none';
+      }
+    };
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        updateSlide(currentSlide - 1);
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        updateSlide(currentSlide + 1);
+      });
+    }
+  }
 
   // Bind inner cancel button
   const cancelBtn = document.getElementById('modal-cancel-btn');
