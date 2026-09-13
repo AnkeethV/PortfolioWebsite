@@ -170,6 +170,34 @@ function renderPersonalInfo(info) {
   if (githubLink && info.github_url) {
     githubLink.href = info.github_url;
   }
+
+  // Footer Tagline (Professional Title displayed below name)
+  const footerTaglineEl = document.getElementById('footer-tagline') || document.querySelector('.footer-tagline');
+  if (footerTaglineEl && info.title) {
+    footerTaglineEl.textContent = info.title;
+  }
+
+  // Footer & Brand Name sync
+  const footerNameEl = document.getElementById('footer-name') || document.querySelector('.footer-name');
+  if (footerNameEl && info.name) {
+    footerNameEl.textContent = info.name;
+  }
+
+  const brandNameEl = document.getElementById('brand-name') || document.querySelector('.brand-wordmark .wordmark-serif');
+  if (brandNameEl && info.name) {
+    brandNameEl.textContent = info.name;
+  }
+
+  const footerCopyEl = document.getElementById('footer-copy-text') || document.querySelector('.footer-copy-col p');
+  if (footerCopyEl && info.name) {
+    const year = new Date().getFullYear();
+    footerCopyEl.textContent = `© ${year} ${info.name}. All rights reserved.`;
+  }
+
+  // Synchronize document title
+  if (info.name && info.title) {
+    document.title = `${info.name} — ${info.title}`;
+  }
 }
 
 /**
