@@ -70,6 +70,10 @@ async function getPglite() {
         const cleanInstance = new PGlite(dataDir);
         await cleanInstance.waitReady;
         pgliteInstance = cleanInstance;
+        try {
+          const { seedDatabase } = await import('./seed.js');
+          await seedDatabase(false);
+        } catch (_) {}
       } catch (fatalErr) {
         pgliteInstance = null;
         throw fatalErr;

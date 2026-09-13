@@ -1,14 +1,15 @@
 import { query } from '../db.js';
 import { requireAdmin } from '../auth.js';
-import { initSchema } from '../seed.js';
+import { initSchema, ensureSeeded } from '../seed.js';
 import { getFallbackProjects } from './fallbackHelper.js';
-import { saveJsonBackup } from '../dataStore.js';
+import { saveJsonBackup, syncProjectsToProfileMd } from '../dataStore.js';
 
 async function syncBackup() {
   try {
     const res = await query('SELECT * FROM projects ORDER BY sort_order ASC, id ASC');
     if (res && Array.isArray(res.rows)) {
       saveJsonBackup('projects_backup.json', res.rows);
+      syncProjectsToProfileMd(res.rows);
     }
   } catch (err) {
     console.warn('Could not save projects backup:', err.message);
@@ -34,10 +35,11 @@ export default async function handler(req, res) {
   // Auth Guard
   if (!requireAdmin(req, res)) return;
 
-  // Ensure DB columns exist
+  // Ensure DB columns exist & seeded
   if (!schemaInitialized) {
     try {
       await initSchema();
+      await ensureSeeded();
       schemaInitialized = true;
     } catch (err) {
       console.warn('Could not auto-migrate schema in projects handler:', err.message);

@@ -2,13 +2,14 @@ import { query } from '../db.js';
 import { requireAdmin } from '../auth.js';
 import { initSchema } from '../seed.js';
 import { getFallbackFaq } from './fallbackHelper.js';
-import { saveJsonBackup } from '../dataStore.js';
+import { saveJsonBackup, syncFaqToProfileMd } from '../dataStore.js';
 
 async function syncBackup() {
   try {
     const res = await query('SELECT * FROM faq ORDER BY sort_order ASC, id ASC');
     if (res && Array.isArray(res.rows)) {
       saveJsonBackup('faq_backup.json', res.rows);
+      syncFaqToProfileMd(res.rows);
     }
   } catch (err) {
     console.warn('Could not save faq backup:', err.message);

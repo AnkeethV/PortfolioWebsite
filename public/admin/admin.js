@@ -1116,7 +1116,16 @@ async function loadProjects() {
     const res = await fetch(`/api/admin/projects?t=${Date.now()}`);
     const data = await res.json();
     if (res.ok && data.success && Array.isArray(data.data)) {
-      allProjects = data.data;
+      if (data.data.length > 0) {
+        allProjects = data.data;
+      } else {
+        const localOverrides = getLocalOverrides();
+        if (localOverrides && Array.isArray(localOverrides.projects) && localOverrides.projects.length > 0) {
+          allProjects = localOverrides.projects;
+        } else {
+          allProjects = data.data;
+        }
+      }
       renderProjectsList();
       syncLocalOverrides({ projects: allProjects });
       return;

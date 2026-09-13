@@ -2,7 +2,7 @@ import { query } from '../db.js';
 import { requireAdmin } from '../auth.js';
 import { initSchema } from '../seed.js';
 import { getFallbackExperience } from './fallbackHelper.js';
-import { saveJsonBackup } from '../dataStore.js';
+import { saveJsonBackup, syncExperienceToProfileMd } from '../dataStore.js';
 
 async function syncBackup() {
   try {
@@ -13,6 +13,7 @@ async function syncBackup() {
         bullets: typeof row.bullets === 'string' ? JSON.parse(row.bullets) : (row.bullets || [])
       }));
       saveJsonBackup('experience_backup.json', items);
+      syncExperienceToProfileMd(items);
     }
   } catch (err) {
     console.warn('Could not save experience backup:', err.message);

@@ -2,13 +2,14 @@ import { query } from '../db.js';
 import { requireAdmin } from '../auth.js';
 import { initSchema } from '../seed.js';
 import { getFallbackSkills } from './fallbackHelper.js';
-import { saveJsonBackup } from '../dataStore.js';
+import { saveJsonBackup, syncSkillsToProfileMd } from '../dataStore.js';
 
 async function syncBackup() {
   try {
     const res = await query('SELECT * FROM skills ORDER BY category ASC, sort_order ASC, id ASC');
     if (res && Array.isArray(res.rows)) {
       saveJsonBackup('skills_backup.json', res.rows);
+      syncSkillsToProfileMd(res.rows);
     }
   } catch (err) {
     console.warn('Could not save skills backup:', err.message);

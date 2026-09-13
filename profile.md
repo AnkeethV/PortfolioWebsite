@@ -34,9 +34,9 @@
 
 ## Projects
 
-* Sales and Finance Analytics – FMCG — Analyzed historical financial data to produce detailed P\&L reports and provided customer- and market-performance analysis versus sales targets. — Tech: Excel — Link: GitHub Repo (link not specified in the source)
-* Business360 – E-commerce — Built a Power BI dashboard combining sales data from Excel/CSV files and a SQL database; optimized it with DAX Studio. — Tech: Power BI, SQL, Excel, DAX Studio — Link: Live Dashboard (URL not specified in the source)
-* AdHoc Analysis – Consumer Goods — Answered 10 ad-hoc business requests using a database containing millions of rows and visualized the findings individually in Power BI for stakeholders. — Tech: Power BI, SQL — Link: GitHub Repo (link not specified in the source)
+* Sales and Finance Analytics — Analyzed historical financial data to produce detailed P&L reports and provided customer- and market-performance analysis versus sales targets. — Tech: Excel — Link: GitHub Repo (link not specified in the source)
+* Business360 — E-commerce — Tech: Power BI, SQL, Excel, DAX Studio — Link: Live Dashboard (URL not specified in the source)
+* AdHoc Analysis — Consumer Goods — Tech: Power BI, SQL — Link: GitHub Repo (link not specified in the source)
 * Personal Finance Tracker — Developed a finance tracker to consolidate expenses, income, and investments and provide actionable financial insights. — Tech: ChatGPT, Claude, Antigravity — Link: GitHub Repo (URL not specified in the source)
 
 ## Skills

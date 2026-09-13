@@ -18,15 +18,26 @@ export async function initSchema() {
 }
 
 /**
- * Checks if personal_info table exists and has at least one record
+ * Checks if all required database tables exist and have records
  */
 export async function isSeeded() {
   try {
-    const res = await query('SELECT COUNT(*) AS count FROM personal_info');
-    const count = parseInt(res.rows[0]?.count || '0', 10);
-    return count > 0;
+    const [pRes, projRes, expRes, skillRes, faqRes] = await Promise.all([
+      query('SELECT COUNT(*) AS count FROM personal_info'),
+      query('SELECT COUNT(*) AS count FROM projects'),
+      query('SELECT COUNT(*) AS count FROM experience'),
+      query('SELECT COUNT(*) AS count FROM skills'),
+      query('SELECT COUNT(*) AS count FROM faq')
+    ]);
+    const pCount = parseInt(pRes.rows[0]?.count || '0', 10);
+    const projCount = parseInt(projRes.rows[0]?.count || '0', 10);
+    const expCount = parseInt(expRes.rows[0]?.count || '0', 10);
+    const skillCount = parseInt(skillRes.rows[0]?.count || '0', 10);
+    const faqCount = parseInt(faqRes.rows[0]?.count || '0', 10);
+
+    return pCount > 0 && projCount > 0 && expCount > 0 && skillCount > 0 && faqCount > 0;
   } catch (err) {
-    // If table doesn't exist yet, it's not seeded
+    // If any table doesn't exist yet, it's not seeded
     return false;
   }
 }
