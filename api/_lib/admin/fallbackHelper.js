@@ -1,13 +1,11 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { parseProfile } from '../parseProfile.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { loadJsonBackup, getRootDir } from '../dataStore.js';
 
 export function getProfileData() {
-  const profilePath = path.resolve(__dirname, '../../../profile.md');
+  const root = getRootDir();
+  const profilePath = path.join(root, 'profile.md');
   if (!fs.existsSync(profilePath)) {
     return { personalInfo: {}, experience: [], projects: [], skills: [], faq: [] };
   }
@@ -15,19 +13,13 @@ export function getProfileData() {
 }
 
 export function getFallbackProjects() {
-  const backupDir = process.env.VERCEL ? '/tmp' : path.resolve(__dirname, '../../../.data');
-  const backupFile = path.join(backupDir, 'projects_backup.json');
-  if (fs.existsSync(backupFile)) {
-    try {
-      const saved = JSON.parse(fs.readFileSync(backupFile, 'utf-8'));
-      if (Array.isArray(saved) && saved.length > 0) {
-        return saved.map(row => ({
-          ...row,
-          tech_tags: typeof row.tech_tags === 'string' ? JSON.parse(row.tech_tags) : (row.tech_tags || []),
-          is_visible: row.is_visible !== false
-        }));
-      }
-    } catch (_) {}
+  const saved = loadJsonBackup('projects_backup.json');
+  if (Array.isArray(saved) && saved.length > 0) {
+    return saved.map(row => ({
+      ...row,
+      tech_tags: typeof row.tech_tags === 'string' ? JSON.parse(row.tech_tags) : (row.tech_tags || []),
+      is_visible: row.is_visible !== false
+    }));
   }
 
   const data = getProfileData();
@@ -52,6 +44,14 @@ export function getFallbackProjects() {
 }
 
 export function getFallbackExperience() {
+  const saved = loadJsonBackup('experience_backup.json');
+  if (Array.isArray(saved) && saved.length > 0) {
+    return saved.map(row => ({
+      ...row,
+      bullets: typeof row.bullets === 'string' ? JSON.parse(row.bullets) : (row.bullets || [])
+    }));
+  }
+
   const data = getProfileData();
   return (data.experience || []).map((exp, idx) => ({
     id: idx + 1,
@@ -65,6 +65,11 @@ export function getFallbackExperience() {
 }
 
 export function getFallbackSkills() {
+  const saved = loadJsonBackup('skills_backup.json');
+  if (Array.isArray(saved) && saved.length > 0) {
+    return saved;
+  }
+
   const data = getProfileData();
   return (data.skills || []).map((skill, idx) => ({
     id: idx + 1,
@@ -75,6 +80,11 @@ export function getFallbackSkills() {
 }
 
 export function getFallbackFaq() {
+  const saved = loadJsonBackup('faq_backup.json');
+  if (Array.isArray(saved) && saved.length > 0) {
+    return saved;
+  }
+
   const data = getProfileData();
   return (data.faq || []).map((f, idx) => ({
     id: idx + 1,
@@ -85,6 +95,11 @@ export function getFallbackFaq() {
 }
 
 export function getFallbackPersonalInfo() {
+  const saved = loadJsonBackup('personal_info_backup.json');
+  if (saved && saved.name) {
+    return saved;
+  }
+
   const data = getProfileData();
   return {
     id: 1,

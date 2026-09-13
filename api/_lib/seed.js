@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { query, getClient, exec } from './db.js';
 import { parseProfile } from './parseProfile.js';
+import { loadJsonBackup } from './dataStore.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,14 +60,9 @@ export async function seedDatabase(force = false) {
 
     // 1. Insert Personal Info
     let p = data.personalInfo || {};
-    const backupFile = path.resolve(__dirname, '../../.data/personal_info_backup.json');
-    if (fs.existsSync(backupFile)) {
-      try {
-        const saved = JSON.parse(fs.readFileSync(backupFile, 'utf-8'));
-        if (saved && saved.name) {
-          p = { ...p, ...saved };
-        }
-      } catch (_) {}
+    const savedPersonal = loadJsonBackup('personal_info_backup.json');
+    if (savedPersonal && savedPersonal.name) {
+      p = { ...p, ...savedPersonal };
     }
 
     await client.query(
@@ -87,29 +83,26 @@ export async function seedDatabase(force = false) {
     );
 
     // Restore Admin Settings (master password) if available
-    const settingsFile = path.resolve(__dirname, '../../.data/admin_settings.json');
-    if (fs.existsSync(settingsFile)) {
-      try {
-        const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf-8'));
-        if (settings && settings.master_password) {
-          await client.query(`
-            CREATE TABLE IF NOT EXISTS admin_settings (
-              key VARCHAR(100) PRIMARY KEY,
-              value TEXT NOT NULL,
-              updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-            )
-          `);
-          await client.query(`
-            INSERT INTO admin_settings (key, value, updated_at)
-            VALUES ('master_password', $1, NOW())
-            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
-          `, [settings.master_password]);
-        }
-      } catch (_) {}
+    const savedSettings = loadJsonBackup('admin_settings.json');
+    if (savedSettings && savedSettings.master_password) {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS admin_settings (
+          key VARCHAR(100) PRIMARY KEY,
+          value TEXT NOT NULL,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await client.query(`
+        INSERT INTO admin_settings (key, value, updated_at)
+        VALUES ('master_password', $1, NOW())
+        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+      `, [savedSettings.master_password]);
     }
 
     // 2. Insert Experience
-    for (const exp of data.experience) {
+    const savedExp = loadJsonBackup('experience_backup.json');
+    const expToSeed = (Array.isArray(savedExp) && savedExp.length > 0) ? savedExp : data.experience;
+    for (const exp of expToSeed) {
       await client.query(
         `INSERT INTO experience 
           (company, title, start_date, end_date, bullets, sort_order)
@@ -126,17 +119,12 @@ export async function seedDatabase(force = false) {
     }
 
     // 3. Insert Projects
-    const projectsBackupFile = path.resolve(__dirname, '../../.data/projects_backup.json');
+    const savedProjects = loadJsonBackup('projects_backup.json');
     let projectsToSeed = data.projects;
     let isFromBackup = false;
-    if (fs.existsSync(projectsBackupFile)) {
-      try {
-        const savedProjects = JSON.parse(fs.readFileSync(projectsBackupFile, 'utf-8'));
-        if (Array.isArray(savedProjects) && savedProjects.length > 0) {
-          projectsToSeed = savedProjects;
-          isFromBackup = true;
-        }
-      } catch (_) {}
+    if (Array.isArray(savedProjects) && savedProjects.length > 0) {
+      projectsToSeed = savedProjects;
+      isFromBackup = true;
     }
 
     for (const proj of projectsToSeed) {
@@ -192,7 +180,9 @@ export async function seedDatabase(force = false) {
     }
 
     // 4. Insert Skills
-    for (const skill of data.skills) {
+    const savedSkills = loadJsonBackup('skills_backup.json');
+    const skillsToSeed = (Array.isArray(savedSkills) && savedSkills.length > 0) ? savedSkills : data.skills;
+    for (const skill of skillsToSeed) {
       await client.query(
         `INSERT INTO skills 
           (category, value, sort_order)
@@ -206,7 +196,9 @@ export async function seedDatabase(force = false) {
     }
 
     // 5. Insert FAQ
-    for (const faqItem of data.faq) {
+    const savedFaq = loadJsonBackup('faq_backup.json');
+    const faqToSeed = (Array.isArray(savedFaq) && savedFaq.length > 0) ? savedFaq : data.faq;
+    for (const faqItem of faqToSeed) {
       await client.query(
         `INSERT INTO faq 
           (question, answer, sort_order)

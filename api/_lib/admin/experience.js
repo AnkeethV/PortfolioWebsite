@@ -1,6 +1,23 @@
 import { query } from '../db.js';
 import { requireAdmin } from '../auth.js';
+import { initSchema } from '../seed.js';
 import { getFallbackExperience } from './fallbackHelper.js';
+import { saveJsonBackup } from '../dataStore.js';
+
+async function syncBackup() {
+  try {
+    const res = await query('SELECT * FROM experience ORDER BY sort_order ASC, id ASC');
+    if (res && Array.isArray(res.rows)) {
+      const items = res.rows.map(row => ({
+        ...row,
+        bullets: typeof row.bullets === 'string' ? JSON.parse(row.bullets) : (row.bullets || [])
+      }));
+      saveJsonBackup('experience_backup.json', items);
+    }
+  } catch (err) {
+    console.warn('Could not save experience backup:', err.message);
+  }
+}
 
 /**
  * /api/admin/experience
@@ -62,6 +79,7 @@ export default async function handler(req, res) {
 
       const created = insertRes.rows[0];
       created.bullets = typeof created.bullets === 'string' ? JSON.parse(created.bullets) : created.bullets;
+      await syncBackup();
       return res.status(201).json({ success: true, data: created });
     }
 
@@ -76,6 +94,7 @@ export default async function handler(req, res) {
             await query('UPDATE experience SET sort_order = $1, updated_at = NOW() WHERE id = $2', [item.sort_order, item.id]);
           }
         }
+        await syncBackup();
         return res.status(200).json({ success: true, message: 'Reorder saved' });
       }
 
@@ -106,6 +125,7 @@ export default async function handler(req, res) {
 
       const updated = updateRes.rows[0];
       updated.bullets = typeof updated.bullets === 'string' ? JSON.parse(updated.bullets) : updated.bullets;
+      await syncBackup();
       return res.status(200).json({ success: true, data: updated });
     }
 
@@ -121,6 +141,7 @@ export default async function handler(req, res) {
         return res.status(404).json({ success: false, error: 'Experience entry not found' });
       }
 
+      await syncBackup();
       return res.status(200).json({ success: true, message: 'Experience deleted successfully', id });
     }
 

@@ -148,11 +148,18 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log('====================================================');
   console.log(`🚀 Portfolio Dev Server running at http://localhost:${PORT}`);
   console.log(`• Public API: http://localhost:${PORT}/api/content`);
   console.log(`• Contact:    http://localhost:${PORT}/api/contact`);
   console.log(`• Admin:      http://localhost:${PORT}/admin`);
   console.log('====================================================');
+
+  try {
+    const { ensureSeeded } = await import('../api/_lib/seed.js');
+    await ensureSeeded();
+  } catch (err) {
+    console.warn('Initial seed check:', err.message);
+  }
 });

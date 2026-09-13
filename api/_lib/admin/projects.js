@@ -1,22 +1,14 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { query } from '../db.js';
 import { requireAdmin } from '../auth.js';
 import { initSchema } from '../seed.js';
 import { getFallbackProjects } from './fallbackHelper.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const backupDir = process.env.VERCEL ? '/tmp' : path.resolve(__dirname, '../../../.data');
-const backupFile = path.join(backupDir, 'projects_backup.json');
+import { saveJsonBackup } from '../dataStore.js';
 
 async function syncBackup() {
   try {
     const res = await query('SELECT * FROM projects ORDER BY sort_order ASC, id ASC');
     if (res && Array.isArray(res.rows)) {
-      if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
-      fs.writeFileSync(backupFile, JSON.stringify(res.rows, null, 2), 'utf-8');
+      saveJsonBackup('projects_backup.json', res.rows);
     }
   } catch (err) {
     console.warn('Could not save projects backup:', err.message);

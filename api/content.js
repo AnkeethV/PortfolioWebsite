@@ -3,29 +3,32 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { query } from './_lib/db.js';
 import { ensureSeeded } from './_lib/seed.js';
-import { parseProfile } from './_lib/parseProfile.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import {
+  getFallbackPersonalInfo,
+  getFallbackExperience,
+  getFallbackProjects,
+  getFallbackSkills,
+  getFallbackFaq
+} from './_lib/admin/fallbackHelper.js';
 
 /**
- * Parses profile.md directly as a robust zero-failure fallback
- * when a live PostgreSQL database is not connected on Vercel.
+ * Returns robust zero-failure fallback portfolio data
+ * reading from saved dataStore backups or profile.md.
  */
 function getFallbackContent() {
-  const profilePath = path.resolve(__dirname, '../profile.md');
-  if (!fs.existsSync(profilePath)) {
-    throw new Error(`profile.md not found at ${profilePath}`);
-  }
-  const parsed = parseProfile(profilePath);
+  const personal_info = getFallbackPersonalInfo();
+  const experience = getFallbackExperience();
+  const allProjects = getFallbackProjects();
+  const projects = allProjects.filter(p => p.is_visible !== false);
 
+  const rawSkills = getFallbackSkills();
   const skills = {
     technical: [],
     tools: [],
     soft: []
   };
 
-  (parsed.skills || []).forEach((s, idx) => {
+  rawSkills.forEach((s, idx) => {
     const cat = s.category ? s.category.toLowerCase() : 'technical';
     const item = { id: s.id || idx + 1, value: s.value, sort_order: s.sort_order || idx + 1 };
     if (skills[cat]) {
@@ -35,29 +38,14 @@ function getFallbackContent() {
     }
   });
 
-  const backupDir = process.env.VERCEL ? '/tmp' : path.resolve(__dirname, '../.data');
-  const projectsBackup = path.join(backupDir, 'projects_backup.json');
-  let fallbackProjects = (parsed.projects || []).map(p => ({ ...p, is_visible: p.is_visible !== false }));
-  if (fs.existsSync(projectsBackup)) {
-    try {
-      const saved = JSON.parse(fs.readFileSync(projectsBackup, 'utf-8'));
-      if (Array.isArray(saved) && saved.length > 0) {
-        fallbackProjects = saved.map(row => ({
-          ...row,
-          tech_tags: typeof row.tech_tags === 'string' ? JSON.parse(row.tech_tags) : (row.tech_tags || []),
-          is_visible: row.is_visible !== false
-        }));
-      }
-    } catch (_) {}
-  }
-  const visibleProjects = fallbackProjects.filter(p => p.is_visible !== false);
+  const faq = getFallbackFaq();
 
   return {
-    personal_info: parsed.personalInfo,
-    experience: parsed.experience,
-    projects: visibleProjects,
+    personal_info,
+    experience,
+    projects,
     skills,
-    faq: parsed.faq
+    faq
   };
 }
 

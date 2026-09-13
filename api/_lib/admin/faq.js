@@ -1,6 +1,19 @@
 import { query } from '../db.js';
 import { requireAdmin } from '../auth.js';
+import { initSchema } from '../seed.js';
 import { getFallbackFaq } from './fallbackHelper.js';
+import { saveJsonBackup } from '../dataStore.js';
+
+async function syncBackup() {
+  try {
+    const res = await query('SELECT * FROM faq ORDER BY sort_order ASC, id ASC');
+    if (res && Array.isArray(res.rows)) {
+      saveJsonBackup('faq_backup.json', res.rows);
+    }
+  } catch (err) {
+    console.warn('Could not save faq backup:', err.message);
+  }
+}
 
 /**
  * /api/admin/faq
@@ -55,6 +68,7 @@ export default async function handler(req, res) {
         [question.trim(), answer.trim(), order]
       );
 
+      await syncBackup();
       return res.status(201).json({ success: true, data: insertRes.rows[0] });
     }
 
@@ -68,6 +82,7 @@ export default async function handler(req, res) {
             await query('UPDATE faq SET sort_order = $1, updated_at = NOW() WHERE id = $2', [item.sort_order, item.id]);
           }
         }
+        await syncBackup();
         return res.status(200).json({ success: true, message: 'FAQ reorder saved' });
       }
 
@@ -91,6 +106,7 @@ export default async function handler(req, res) {
         return res.status(404).json({ success: false, error: 'FAQ entry not found' });
       }
 
+      await syncBackup();
       return res.status(200).json({ success: true, data: updateRes.rows[0] });
     }
 
@@ -106,6 +122,7 @@ export default async function handler(req, res) {
         return res.status(404).json({ success: false, error: 'FAQ entry not found' });
       }
 
+      await syncBackup();
       return res.status(200).json({ success: true, message: 'FAQ entry deleted', id });
     }
 

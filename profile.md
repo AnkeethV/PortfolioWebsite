@@ -8,7 +8,7 @@
 * Email: ankeeth.v@gmail.com
 * LinkedIn: https://www.linkedin.com/in/ankeeth-v-
 * GitHub: https://github.com/AnkeethV
-* Bio: Client-focused problem solver and data \& AI enthusiast with experience in customer-facing technical support, stakeholder management, analytical thinking, and business problem-solving. Skilled in Excel, SQL, Power BI, and AI tools, and looking for Data Analyst, Business Analyst, AI, Operations, and customer-focused Data roles where technical capabilities can be combined with stakeholder engagement and business communication.
+* Bio: Client-focused problem solver and data & AI enthusiast with experience in customer-facing technical support, stakeholder management, analytical thinking, and business problem-solving. Skilled in Excel, SQL, Power BI, and AI tools, and looking for Data Analyst, Business Analyst, AI, Operations, and customer-focused Data roles where technical capabilities can be combined with stakeholder engagement and business communication.
 
 ## Experience
 

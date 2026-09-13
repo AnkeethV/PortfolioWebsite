@@ -96,7 +96,7 @@ function isStaleFileError(err) {
   return msg.includes('could not open file') ||
          msg.includes('no such file') ||
          msg.includes('closed') ||
-         msg.includes('relation') ||
+         msg.includes('bad file descriptor') ||
          msg.includes('cache lookup') ||
          err.code === 'XX000';
 }

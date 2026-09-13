@@ -1,23 +1,8 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { query } from '../db.js';
 import { requireAdmin } from '../auth.js';
+import { initSchema } from '../seed.js';
 import { getFallbackPersonalInfo } from './fallbackHelper.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const backupDir = process.env.VERCEL ? '/tmp' : path.resolve(__dirname, '../../.data');
-const backupFile = path.join(backupDir, 'personal_info_backup.json');
-
-function saveBackup(data) {
-  try {
-    if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
-    fs.writeFileSync(backupFile, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (err) {
-    console.warn('Could not save personal info backup:', err.message);
-  }
-}
+import { saveJsonBackup, syncPersonalInfoToProfileMd } from '../dataStore.js';
 
 /**
  * /api/admin/personal-info
@@ -58,9 +43,16 @@ export default async function handler(req, res) {
     if (req.method === 'PUT') {
       const b = req.body || {};
 
+      try {
+        await initSchema();
+      } catch (_) {}
+
       // Check if row exists
-      const check = await query('SELECT * FROM personal_info LIMIT 1');
-      const existing = check.rows[0] || {};
+      let existing = {};
+      try {
+        const check = await query('SELECT * FROM personal_info LIMIT 1');
+        existing = check.rows[0] || {};
+      } catch (_) {}
 
       const name = (b.name !== undefined && b.name.trim()) ? b.name.trim() : (existing.name || 'Ankeeth V');
       const email = (b.email !== undefined && b.email.trim()) ? b.email.trim() : (existing.email || 'ankeeth.v@gmail.com');
@@ -80,7 +72,7 @@ export default async function handler(req, res) {
         : (existing.photo_url || '/assets/placeholder-avatar.svg');
 
       let savedRecord;
-      if (check.rows.length === 0) {
+      if (!existing.id) {
         // Insert new if empty
         const insertRes = await query(
           `INSERT INTO personal_info 
@@ -104,7 +96,26 @@ export default async function handler(req, res) {
         savedRecord = updateRes.rows[0];
       }
 
-      saveBackup(savedRecord);
+      if (!savedRecord) {
+        savedRecord = {
+          id: existing.id || 1,
+          name,
+          title,
+          location,
+          email,
+          linkedin_url,
+          github_url,
+          bio,
+          resume_url,
+          photo_url,
+          updated_at: new Date().toISOString()
+        };
+      }
+
+      // Persist across serverless instances, cold boots, and local restarts
+      saveJsonBackup('personal_info_backup.json', savedRecord);
+      syncPersonalInfoToProfileMd(savedRecord);
+
       return res.status(200).json({ success: true, data: savedRecord });
     }
 
