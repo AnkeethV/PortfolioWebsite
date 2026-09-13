@@ -1,7 +1,27 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { query } from '../db.js';
 import { requireAdmin } from '../auth.js';
 import { initSchema } from '../seed.js';
 import { getFallbackProjects } from './fallbackHelper.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const backupDir = process.env.VERCEL ? '/tmp' : path.resolve(__dirname, '../../../.data');
+const backupFile = path.join(backupDir, 'projects_backup.json');
+
+async function syncBackup() {
+  try {
+    const res = await query('SELECT * FROM projects ORDER BY sort_order ASC, id ASC');
+    if (res && Array.isArray(res.rows)) {
+      if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
+      fs.writeFileSync(backupFile, JSON.stringify(res.rows, null, 2), 'utf-8');
+    }
+  } catch (err) {
+    console.warn('Could not save projects backup:', err.message);
+  }
+}
 
 let schemaInitialized = false;
 
@@ -87,7 +107,7 @@ export default async function handler(req, res) {
       }
 
       const tagsJson = JSON.stringify(Array.isArray(tech_tags) ? tech_tags : []);
-      const visible = is_visible !== undefined ? Boolean(is_visible) : true;
+      const visible = is_visible !== undefined ? (is_visible === true || is_visible === 'true' || is_visible === 1) : true;
 
       const insertRes = await query(
         `INSERT INTO projects (
@@ -132,6 +152,7 @@ export default async function handler(req, res) {
       const created = insertRes.rows[0];
       created.tech_tags = typeof created.tech_tags === 'string' ? JSON.parse(created.tech_tags) : created.tech_tags;
       created.is_visible = created.is_visible !== false;
+      await syncBackup();
       return res.status(201).json({ success: true, data: created });
     }
 
@@ -145,6 +166,7 @@ export default async function handler(req, res) {
             await query('UPDATE projects SET sort_order = $1, updated_at = NOW() WHERE id = $2', [item.sort_order, item.id]);
           }
         }
+        await syncBackup();
         return res.status(200).json({ success: true, message: 'Projects reorder saved' });
       }
 
@@ -179,7 +201,9 @@ export default async function handler(req, res) {
       const github_url = b.github_url !== undefined ? b.github_url : existing.github_url;
       const platform_name = b.platform_name !== undefined ? b.platform_name : existing.platform_name;
       const external_link = b.external_link !== undefined ? b.external_link : existing.external_link;
-      const is_visible = b.is_visible !== undefined ? Boolean(b.is_visible) : (existing.is_visible !== false);
+      const is_visible = b.is_visible !== undefined
+        ? (b.is_visible === true || b.is_visible === 'true' || b.is_visible === 1)
+        : (existing.is_visible !== false);
       const sort_order = b.sort_order !== undefined ? b.sort_order : existing.sort_order;
 
       const updateRes = await query(
@@ -235,6 +259,7 @@ export default async function handler(req, res) {
       const updated = updateRes.rows[0];
       updated.tech_tags = typeof updated.tech_tags === 'string' ? JSON.parse(updated.tech_tags) : updated.tech_tags;
       updated.is_visible = updated.is_visible !== false;
+      await syncBackup();
       return res.status(200).json({ success: true, data: updated });
     }
 
@@ -250,6 +275,7 @@ export default async function handler(req, res) {
         return res.status(404).json({ success: false, error: 'Project not found' });
       }
 
+      await syncBackup();
       return res.status(200).json({ success: true, message: 'Project deleted successfully', id });
     }
 

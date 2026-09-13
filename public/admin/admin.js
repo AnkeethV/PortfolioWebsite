@@ -197,16 +197,19 @@ async function loadDashboardData() {
     const localOverrides = getLocalOverrides();
 
     // 1. Personal Info
-    const pRes = await fetch(`/api/admin/personal-info?t=${Date.now()}`);
-    const pData = await pRes.json();
-    if (pData.success && pData.data) {
-      const serverInfo = pData.data;
-      const mergedInfo = (localOverrides && localOverrides.personal_info)
-        ? { ...serverInfo, ...localOverrides.personal_info }
-        : serverInfo;
-      hydratePersonalInfo(mergedInfo);
-    } else if (localOverrides && localOverrides.personal_info) {
-      hydratePersonalInfo(localOverrides.personal_info);
+    try {
+      const pRes = await fetch(`/api/admin/personal-info?t=${Date.now()}`);
+      const pData = await pRes.json();
+      if (pData.success && pData.data) {
+        hydratePersonalInfo(pData.data);
+        syncLocalOverrides({ personal_info: pData.data });
+      } else if (localOverrides && localOverrides.personal_info) {
+        hydratePersonalInfo(localOverrides.personal_info);
+      }
+    } catch (_) {
+      if (localOverrides && localOverrides.personal_info) {
+        hydratePersonalInfo(localOverrides.personal_info);
+      }
     }
 
     // 2. Load Experience, Projects, Skills, FAQ from admin endpoints
@@ -933,18 +936,21 @@ async function handleSavePersonalInfo(e) {
  * 4. Experience CRUD
  */
 async function loadExperience() {
-  const localOverrides = getLocalOverrides();
-  const res = await fetch(`/api/admin/experience?t=${Date.now()}`);
-  const data = await res.json();
-  if (data.success) {
-    const serverExp = data.data || [];
-    if (localOverrides && Array.isArray(localOverrides.experience) && localOverrides.experience.length > 0) {
-      allExperiences = localOverrides.experience;
-    } else {
-      allExperiences = serverExp;
+  try {
+    const res = await fetch(`/api/admin/experience?t=${Date.now()}`);
+    const data = await res.json();
+    if (res.ok && data.success && Array.isArray(data.data)) {
+      allExperiences = data.data;
+      renderExperienceList();
+      syncLocalOverrides({ experience: allExperiences });
+      return;
     }
-    renderExperienceList();
-  } else if (localOverrides && Array.isArray(localOverrides.experience)) {
+  } catch (err) {
+    console.warn('Could not fetch server experience, using local overrides if available:', err);
+  }
+
+  const localOverrides = getLocalOverrides();
+  if (localOverrides && Array.isArray(localOverrides.experience)) {
     allExperiences = localOverrides.experience;
     renderExperienceList();
   }
@@ -1106,18 +1112,21 @@ async function reorderExperience(index, direction) {
  * 5. Projects CRUD
  */
 async function loadProjects() {
-  const localOverrides = getLocalOverrides();
-  const res = await fetch(`/api/admin/projects?t=${Date.now()}`);
-  const data = await res.json();
-  if (data.success) {
-    const serverProjects = data.data || [];
-    if (localOverrides && Array.isArray(localOverrides.projects) && localOverrides.projects.length > 0) {
-      allProjects = localOverrides.projects;
-    } else {
-      allProjects = serverProjects;
+  try {
+    const res = await fetch(`/api/admin/projects?t=${Date.now()}`);
+    const data = await res.json();
+    if (res.ok && data.success && Array.isArray(data.data)) {
+      allProjects = data.data;
+      renderProjectsList();
+      syncLocalOverrides({ projects: allProjects });
+      return;
     }
-    renderProjectsList();
-  } else if (localOverrides && Array.isArray(localOverrides.projects)) {
+  } catch (err) {
+    console.warn('Could not fetch server projects, using local overrides if available:', err);
+  }
+
+  const localOverrides = getLocalOverrides();
+  if (localOverrides && Array.isArray(localOverrides.projects)) {
     allProjects = localOverrides.projects;
     renderProjectsList();
   }
@@ -1135,7 +1144,7 @@ function renderProjectsList() {
   container.innerHTML = allProjects.map((proj, idx) => `
     <div class="item-row" data-id="${proj.id}">
       <div class="item-info">
-        <h4 class="item-main-title">${escapeHtml(proj.name)}</h4>
+        <h4 class="item-main-title">${escapeHtml(proj.name)} ${proj.is_visible === false || proj.is_visible === 'false' ? '<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.15); color: #EF4444; margin-left: 8px;">Hidden</span>' : ''}</h4>
         <div class="item-meta">${escapeHtml(proj.description).slice(0, 80)}... • Tags: ${(proj.tech_tags || []).join(', ')}</div>
       </div>
       <div class="item-actions">
@@ -1180,6 +1189,7 @@ function openAddProject() {
   document.getElementById('proj-id').value = '';
   document.getElementById('proj-type').value = 'Excel';
   document.getElementById('proj-visible-yes').checked = true;
+  document.getElementById('proj-visible-no').checked = false;
   clearProjThumb();
   clearProjScreenshot1();
   clearProjScreenshot2();
@@ -1189,7 +1199,7 @@ function openAddProject() {
 }
 
 function openEditProject(id) {
-  const proj = allProjects.find(item => item.id === id);
+  const proj = allProjects.find(item => String(item.id) === String(id));
   if (!proj) return;
 
   document.getElementById('modal-project-title').textContent = 'Edit Project';
@@ -1210,10 +1220,12 @@ function openEditProject(id) {
   document.getElementById('proj-platform').value = proj.platform_name || '';
   document.getElementById('proj-link').value = proj.external_link || '';
 
-  if (proj.is_visible === false) {
+  if (proj.is_visible === false || proj.is_visible === 'false' || proj.is_visible === 0) {
     document.getElementById('proj-visible-no').checked = true;
+    document.getElementById('proj-visible-yes').checked = false;
   } else {
     document.getElementById('proj-visible-yes').checked = true;
+    document.getElementById('proj-visible-no').checked = false;
   }
 
   if (proj.thumbnail_url && proj.thumbnail_url !== '/assets/placeholder-avatar.svg') {
@@ -1307,8 +1319,22 @@ async function handleSaveProject(e) {
     if (res.ok && data.success) {
       closeModal('modal-project');
       showToast(id ? 'Project updated!' : 'Project added!');
+      if (data.data) {
+        const savedProj = data.data;
+        if (id) {
+          const idx = allProjects.findIndex(p => String(p.id) === String(id));
+          if (idx !== -1) {
+            allProjects[idx] = { ...allProjects[idx], ...savedProj };
+          } else {
+            allProjects.push(savedProj);
+          }
+        } else {
+          allProjects.push(savedProj);
+        }
+        renderProjectsList();
+        syncLocalOverrides({ projects: allProjects });
+      }
       await loadProjects();
-      syncLocalOverrides({ projects: allProjects });
     } else {
       showToast(data.error || 'Failed to save project', 'error');
     }
@@ -1325,8 +1351,10 @@ async function deleteProject(id) {
     const data = await res.json();
     if (res.ok && data.success) {
       showToast('Project deleted.');
-      await loadProjects();
+      allProjects = allProjects.filter(p => String(p.id) !== String(id));
+      renderProjectsList();
       syncLocalOverrides({ projects: allProjects });
+      await loadProjects();
     } else {
       showToast(data.error || 'Failed to delete project', 'error');
     }
@@ -1366,18 +1394,21 @@ async function reorderProjects(index, direction) {
  * 6. Skills CRUD
  */
 async function loadSkills() {
-  const localOverrides = getLocalOverrides();
-  const res = await fetch(`/api/admin/skills?t=${Date.now()}`);
-  const data = await res.json();
-  if (data.success) {
-    const serverSkills = data.data || [];
-    if (localOverrides && Array.isArray(localOverrides.skills_flat) && localOverrides.skills_flat.length > 0) {
-      allSkills = localOverrides.skills_flat;
-    } else {
-      allSkills = serverSkills;
+  try {
+    const res = await fetch(`/api/admin/skills?t=${Date.now()}`);
+    const data = await res.json();
+    if (res.ok && data.success && Array.isArray(data.data)) {
+      allSkills = data.data;
+      renderSkillsList();
+      syncLocalOverrides({ skills: getGroupedSkills(allSkills), skills_flat: allSkills });
+      return;
     }
-    renderSkillsList();
-  } else if (localOverrides && Array.isArray(localOverrides.skills_flat)) {
+  } catch (err) {
+    console.warn('Could not fetch server skills, using local overrides if available:', err);
+  }
+
+  const localOverrides = getLocalOverrides();
+  if (localOverrides && Array.isArray(localOverrides.skills_flat)) {
     allSkills = localOverrides.skills_flat;
     renderSkillsList();
   }
@@ -1448,18 +1479,21 @@ async function deleteSkill(id) {
  * 7. FAQ CRUD
  */
 async function loadFaq() {
-  const localOverrides = getLocalOverrides();
-  const res = await fetch(`/api/admin/faq?t=${Date.now()}`);
-  const data = await res.json();
-  if (data.success) {
-    const serverFaqs = data.data || [];
-    if (localOverrides && Array.isArray(localOverrides.faq) && localOverrides.faq.length > 0) {
-      allFaqs = localOverrides.faq;
-    } else {
-      allFaqs = serverFaqs;
+  try {
+    const res = await fetch(`/api/admin/faq?t=${Date.now()}`);
+    const data = await res.json();
+    if (res.ok && data.success && Array.isArray(data.data)) {
+      allFaqs = data.data;
+      renderFaqList();
+      syncLocalOverrides({ faq: allFaqs });
+      return;
     }
-    renderFaqList();
-  } else if (localOverrides && Array.isArray(localOverrides.faq)) {
+  } catch (err) {
+    console.warn('Could not fetch server FAQ, using local overrides if available:', err);
+  }
+
+  const localOverrides = getLocalOverrides();
+  if (localOverrides && Array.isArray(localOverrides.faq)) {
     allFaqs = localOverrides.faq;
     renderFaqList();
   }

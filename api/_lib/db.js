@@ -43,10 +43,38 @@ async function getPglite() {
     try {
       if (!fs.existsSync(dataDir)) {
         fs.mkdirSync(dataDir, { recursive: true });
+      } else {
+        // Clean up stale postmaster.pid and lock files from crashed/killed processes
+        const pidFile = path.join(dataDir, 'postmaster.pid');
+        if (fs.existsSync(pidFile)) {
+          try { fs.unlinkSync(pidFile); } catch (_) {}
+        }
+        const lockFiles = fs.readdirSync(dataDir).filter(f => f.startsWith('.s.PGSQL') && f.includes('.lock'));
+        lockFiles.forEach(f => {
+          try { fs.unlinkSync(path.join(dataDir, f)); } catch (_) {}
+        });
       }
     } catch (_) {}
-    pgliteInstance = new PGlite(dataDir);
-    await pgliteInstance.waitReady;
+
+    try {
+      const instance = new PGlite(dataDir);
+      await instance.waitReady;
+      pgliteInstance = instance;
+    } catch (err) {
+      console.warn('PGlite data directory corrupted or failed to load. Re-initializing clean database...', err.message);
+      try {
+        if (typeof fs.rmSync === 'function') {
+          fs.rmSync(dataDir, { recursive: true, force: true });
+        }
+        fs.mkdirSync(dataDir, { recursive: true });
+        const cleanInstance = new PGlite(dataDir);
+        await cleanInstance.waitReady;
+        pgliteInstance = cleanInstance;
+      } catch (fatalErr) {
+        pgliteInstance = null;
+        throw fatalErr;
+      }
+    }
   }
   return pgliteInstance;
 }

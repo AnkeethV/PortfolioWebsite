@@ -126,21 +126,69 @@ export async function seedDatabase(force = false) {
     }
 
     // 3. Insert Projects
-    for (const proj of data.projects) {
-      await client.query(
-        `INSERT INTO projects 
-          (name, description, tech_tags, thumbnail_url, video_url, external_link, sort_order)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-          proj.name,
-          proj.description,
-          JSON.stringify(proj.tech_tags || []),
-          proj.thumbnail_url,
-          proj.video_url,
-          proj.external_link,
-          proj.sort_order
-        ]
-      );
+    const projectsBackupFile = path.resolve(__dirname, '../../.data/projects_backup.json');
+    let projectsToSeed = data.projects;
+    let isFromBackup = false;
+    if (fs.existsSync(projectsBackupFile)) {
+      try {
+        const savedProjects = JSON.parse(fs.readFileSync(projectsBackupFile, 'utf-8'));
+        if (Array.isArray(savedProjects) && savedProjects.length > 0) {
+          projectsToSeed = savedProjects;
+          isFromBackup = true;
+        }
+      } catch (_) {}
+    }
+
+    for (const proj of projectsToSeed) {
+      if (isFromBackup) {
+        await client.query(
+          `INSERT INTO projects 
+            (name, description, project_type, domain, other_tools, short_info,
+             tech_tags, thumbnail_url, screenshot1_url, screenshot1_desc,
+             screenshot2_url, screenshot2_desc, video_url, powerbi_url,
+             linkedin_url, github_url, platform_name, external_link,
+             is_visible, sort_order)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`,
+          [
+            proj.name,
+            proj.description || '',
+            proj.project_type || null,
+            proj.domain || null,
+            proj.other_tools || null,
+            proj.short_info || null,
+            JSON.stringify(Array.isArray(proj.tech_tags) ? proj.tech_tags : []),
+            proj.thumbnail_url || '/assets/placeholder-avatar.svg',
+            proj.screenshot1_url || null,
+            proj.screenshot1_desc || null,
+            proj.screenshot2_url || null,
+            proj.screenshot2_desc || null,
+            proj.video_url || null,
+            proj.powerbi_url || null,
+            proj.linkedin_url || null,
+            proj.github_url || null,
+            proj.platform_name || null,
+            proj.external_link || null,
+            proj.is_visible !== false,
+            proj.sort_order || 0
+          ]
+        );
+      } else {
+        await client.query(
+          `INSERT INTO projects 
+            (name, description, tech_tags, thumbnail_url, video_url, external_link, sort_order, is_visible)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [
+            proj.name,
+            proj.description,
+            JSON.stringify(proj.tech_tags || []),
+            proj.thumbnail_url,
+            proj.video_url,
+            proj.external_link,
+            proj.sort_order,
+            true
+          ]
+        );
+      }
     }
 
     // 4. Insert Skills

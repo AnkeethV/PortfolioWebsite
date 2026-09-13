@@ -15,6 +15,21 @@ export function getProfileData() {
 }
 
 export function getFallbackProjects() {
+  const backupDir = process.env.VERCEL ? '/tmp' : path.resolve(__dirname, '../../../.data');
+  const backupFile = path.join(backupDir, 'projects_backup.json');
+  if (fs.existsSync(backupFile)) {
+    try {
+      const saved = JSON.parse(fs.readFileSync(backupFile, 'utf-8'));
+      if (Array.isArray(saved) && saved.length > 0) {
+        return saved.map(row => ({
+          ...row,
+          tech_tags: typeof row.tech_tags === 'string' ? JSON.parse(row.tech_tags) : (row.tech_tags || []),
+          is_visible: row.is_visible !== false
+        }));
+      }
+    } catch (_) {}
+  }
+
   const data = getProfileData();
   return (data.projects || []).map((proj, idx) => ({
     id: idx + 1,
@@ -31,7 +46,7 @@ export function getFallbackProjects() {
     linkedin_url: proj.linkedin_url || '',
     github_url: proj.github_url || '',
     external_link: proj.external_link || '',
-    is_visible: true,
+    is_visible: proj.is_visible !== false,
     sort_order: proj.sort_order || idx + 1
   }));
 }

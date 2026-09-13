@@ -35,10 +35,27 @@ function getFallbackContent() {
     }
   });
 
+  const backupDir = process.env.VERCEL ? '/tmp' : path.resolve(__dirname, '../.data');
+  const projectsBackup = path.join(backupDir, 'projects_backup.json');
+  let fallbackProjects = (parsed.projects || []).map(p => ({ ...p, is_visible: p.is_visible !== false }));
+  if (fs.existsSync(projectsBackup)) {
+    try {
+      const saved = JSON.parse(fs.readFileSync(projectsBackup, 'utf-8'));
+      if (Array.isArray(saved) && saved.length > 0) {
+        fallbackProjects = saved.map(row => ({
+          ...row,
+          tech_tags: typeof row.tech_tags === 'string' ? JSON.parse(row.tech_tags) : (row.tech_tags || []),
+          is_visible: row.is_visible !== false
+        }));
+      }
+    } catch (_) {}
+  }
+  const visibleProjects = fallbackProjects.filter(p => p.is_visible !== false);
+
   return {
     personal_info: parsed.personalInfo,
     experience: parsed.experience,
-    projects: parsed.projects,
+    projects: visibleProjects,
     skills,
     faq: parsed.faq
   };

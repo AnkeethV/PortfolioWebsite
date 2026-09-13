@@ -242,12 +242,14 @@ function renderProjects(projects) {
   const grid = document.getElementById('projects-grid');
   if (!grid) return;
 
-  if (!projects || projects.length === 0) {
+  const visibleProjects = (projects || []).filter(p => p.is_visible !== false && p.is_visible !== 'false' && p.is_visible !== 0);
+
+  if (visibleProjects.length === 0) {
     grid.innerHTML = '<p class="text-muted">No projects found.</p>';
     return;
   }
 
-  grid.innerHTML = projects.map((proj, idx) => {
+  grid.innerHTML = visibleProjects.map((proj, idx) => {
     const tags = Array.isArray(proj.tech_tags) ? proj.tech_tags : [];
     const tagsHtml = tags.slice(0, 3).map(t => `<span class="tag-chip">${escapeHtml(t)}</span>`).join('');
     const extraCount = tags.length > 3 ? `<span class="tag-chip">+${tags.length - 3}</span>` : '';
@@ -284,7 +286,7 @@ function renderProjects(projects) {
   const cards = grid.querySelectorAll('.project-card');
   cards.forEach(card => {
     const index = parseInt(card.getAttribute('data-project-index'), 10);
-    const projData = projects[index];
+    const projData = visibleProjects[index];
 
     card.addEventListener('click', () => {
       openProjectModal(projData);

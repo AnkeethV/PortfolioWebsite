@@ -32,7 +32,7 @@ export async function buildSystemPrompt() {
         return `* ${e.company} — ${e.title} (${e.start_date} – ${e.end_date})\n${bullets.map(b => `  - ${b}`).join('\n')}`;
       }).join('\n\n');
 
-      const projRes = await query('SELECT name, description, tech_tags, external_link FROM projects ORDER BY sort_order ASC, id ASC');
+      const projRes = await query('SELECT name, description, tech_tags, external_link FROM projects WHERE is_visible IS NOT FALSE ORDER BY sort_order ASC, id ASC');
       projects = projRes.rows.map(pr => {
         const tags = typeof pr.tech_tags === 'string' ? JSON.parse(pr.tech_tags) : (pr.tech_tags || []);
         return `* ${pr.name}: ${pr.description} (Tech: ${tags.join(', ')}) [Link: ${pr.external_link || 'N/A'}]`;
