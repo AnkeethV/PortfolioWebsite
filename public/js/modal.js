@@ -49,7 +49,62 @@ export function openProjectModal(project) {
     .map(tag => `<span class="tag-chip">${escapeHtml(tag)}</span>`)
     .join('');
 
-  // Collect Screenshots
+let activeLightbox = null;
+
+function openLightbox(imgSrc, captionText = '') {
+  if (!imgSrc) return;
+
+  let lightbox = document.getElementById('image-lightbox-modal');
+  if (!lightbox) {
+    lightbox = document.createElement('div');
+    lightbox.id = 'image-lightbox-modal';
+    lightbox.className = 'lightbox-backdrop';
+    lightbox.setAttribute('role', 'dialog');
+    lightbox.setAttribute('aria-modal', 'true');
+    lightbox.setAttribute('aria-label', 'Full size image viewer');
+    lightbox.innerHTML = `
+      <div class="lightbox-content">
+        <button type="button" class="lightbox-close-btn" id="lightbox-close-btn" aria-label="Close full view">&times;</button>
+        <img id="lightbox-full-img" src="" alt="Full view" class="lightbox-img">
+        <p id="lightbox-caption" class="lightbox-caption"></p>
+      </div>
+    `;
+    document.body.appendChild(lightbox);
+
+    lightbox.addEventListener('click', (e) => {
+      if (e.target === lightbox || e.target.closest('#lightbox-close-btn')) {
+        closeLightbox();
+      }
+    });
+  }
+
+  const fullImg = lightbox.querySelector('#lightbox-full-img');
+  const cap = lightbox.querySelector('#lightbox-caption');
+
+  if (fullImg) fullImg.src = imgSrc;
+  if (cap) {
+    cap.textContent = captionText;
+    cap.style.display = captionText ? 'block' : 'none';
+  }
+
+  lightbox.style.display = 'flex';
+  activeLightbox = lightbox;
+  requestAnimationFrame(() => {
+    lightbox.classList.add('active');
+  });
+}
+
+function closeLightbox() {
+  const lightbox = document.getElementById('image-lightbox-modal');
+  if (!lightbox) return;
+  lightbox.classList.remove('active');
+  setTimeout(() => {
+    lightbox.style.display = 'none';
+    activeLightbox = null;
+  }, 200);
+}
+
+// Collect Screenshots
   const screenshots = [];
   if (project.screenshot1_url) {
     screenshots.push({ url: project.screenshot1_url, desc: project.screenshot1_desc || '' });
@@ -70,9 +125,7 @@ export function openProjectModal(project) {
           ` : ''}
 
           <div class="modal-carousel-slide">
-            <a id="modal-screenshot-link" href="${escapeHtml(screenshots[0].url)}" target="_blank" rel="noopener noreferrer" title="Click to view full image">
-              <img id="modal-screenshot-img" src="${escapeHtml(screenshots[0].url)}" alt="${escapeHtml(project.name)} Screenshot" class="modal-carousel-img">
-            </a>
+            <img id="modal-screenshot-img" src="${escapeHtml(screenshots[0].url)}" alt="${escapeHtml(project.name)} Screenshot" class="modal-carousel-img" title="Click to view full size" tabindex="0" role="button">
           </div>
 
           ${screenshots.length > 1 ? `
@@ -177,13 +230,6 @@ export function openProjectModal(project) {
       
       <p class="modal-project-desc" style="white-space: pre-line; margin-bottom: 24px;">${escapeHtml(project.description)}</p>
 
-      <div style="margin-bottom: 1.5rem;">
-        <h4 class="modal-section-title">Technologies & Tools</h4>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-          ${tagsHtml || '<span class="tag-chip">Analytics</span>'}
-        </div>
-      </div>
-
       ${videoHtml}
 
       <div style="display: flex; justify-content: flex-end; margin-top: 24px;">
@@ -192,20 +238,35 @@ export function openProjectModal(project) {
     </div>
   `;
 
-  // Bind carousel navigation
+  // Bind screenshot image click to open lightbox
+  const imgEl = document.getElementById('modal-screenshot-img');
   let currentSlide = 0;
+
+  if (imgEl) {
+    const handleImgClick = () => {
+      const activeUrl = (screenshots[currentSlide] && screenshots[currentSlide].url) || imgEl.src;
+      const activeDesc = (screenshots[currentSlide] && screenshots[currentSlide].desc) || '';
+      openLightbox(activeUrl, activeDesc);
+    };
+    imgEl.addEventListener('click', handleImgClick);
+    imgEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleImgClick();
+      }
+    });
+  }
+
+  // Bind carousel navigation
   if (screenshots.length > 1) {
     const prevBtn = document.getElementById('modal-carousel-prev');
     const nextBtn = document.getElementById('modal-carousel-next');
-    const imgEl = document.getElementById('modal-screenshot-img');
-    const linkEl = document.getElementById('modal-screenshot-link');
     const capEl = document.getElementById('modal-screenshot-caption');
 
     const updateSlide = (idx) => {
       currentSlide = (idx + screenshots.length) % screenshots.length;
       const s = screenshots[currentSlide];
       if (imgEl) imgEl.src = s.url;
-      if (linkEl) linkEl.href = s.url;
       if (capEl) {
         capEl.textContent = s.desc;
         capEl.style.display = s.desc ? 'block' : 'none';
@@ -281,10 +342,17 @@ export function initModal() {
     });
   }
 
-  // Close on Escape key
+  // Close on Escape key (close lightbox first if open, else modal)
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && activeModal) {
-      closeProjectModal();
+    if (e.key === 'Escape') {
+      const lightbox = document.getElementById('image-lightbox-modal');
+      if (lightbox && lightbox.classList.contains('active')) {
+        closeLightbox();
+        return;
+      }
+      if (activeModal) {
+        closeProjectModal();
+      }
     }
   });
 }
