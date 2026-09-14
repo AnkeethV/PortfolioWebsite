@@ -114,20 +114,40 @@ export async function seedDatabase(force = false) {
     const savedExp = loadJsonBackup('experience_backup.json');
     const expToSeed = (Array.isArray(savedExp) && savedExp.length > 0) ? savedExp : data.experience;
     for (const exp of expToSeed) {
-      await client.query(
-        `INSERT INTO experience 
-          (company, title, start_date, end_date, bullets, sort_order)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          exp.company,
-          exp.title,
-          exp.start_date,
-          exp.end_date,
-          JSON.stringify(exp.bullets || []),
-          exp.sort_order
-        ]
-      );
+      if (exp.id) {
+        await client.query(
+          `INSERT INTO experience 
+            (id, company, title, start_date, end_date, bullets, sort_order)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [
+            exp.id,
+            exp.company,
+            exp.title,
+            exp.start_date,
+            exp.end_date,
+            JSON.stringify(exp.bullets || []),
+            exp.sort_order || 0
+          ]
+        );
+      } else {
+        await client.query(
+          `INSERT INTO experience 
+            (company, title, start_date, end_date, bullets, sort_order)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [
+            exp.company,
+            exp.title,
+            exp.start_date,
+            exp.end_date,
+            JSON.stringify(exp.bullets || []),
+            exp.sort_order || 0
+          ]
+        );
+      }
     }
+    try {
+      await client.query("SELECT setval(pg_get_serial_sequence('experience', 'id'), COALESCE((SELECT MAX(id) FROM experience), 1))");
+    } catch (_) {}
 
     // 3. Insert Projects
     const savedProjects = loadJsonBackup('projects_backup.json');
@@ -138,8 +158,54 @@ export async function seedDatabase(force = false) {
       isFromBackup = true;
     }
 
+    const cleanLink = (link) => {
+      if (!link || typeof link !== 'string') return null;
+      const trimmed = link.trim();
+      if (!trimmed || trimmed.toLowerCase().includes('not specified in the source')) return null;
+      return trimmed;
+    };
+
     for (const proj of projectsToSeed) {
-      if (isFromBackup) {
+      const sanitizedExternal = cleanLink(proj.external_link);
+      const sanitizedVideo = cleanLink(proj.video_url);
+      const sanitizedPowerBi = cleanLink(proj.powerbi_url);
+      const sanitizedLinkedIn = cleanLink(proj.linkedin_url);
+      const sanitizedGitHub = cleanLink(proj.github_url);
+
+      if (isFromBackup && proj.id) {
+        await client.query(
+          `INSERT INTO projects 
+            (id, name, description, project_type, domain, other_tools, short_info,
+             tech_tags, thumbnail_url, screenshot1_url, screenshot1_desc,
+             screenshot2_url, screenshot2_desc, video_url, powerbi_url,
+             linkedin_url, github_url, platform_name, external_link,
+             is_visible, sort_order)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`,
+          [
+            proj.id,
+            proj.name,
+            proj.description || '',
+            proj.project_type || null,
+            proj.domain || null,
+            proj.other_tools || null,
+            proj.short_info || null,
+            JSON.stringify(Array.isArray(proj.tech_tags) ? proj.tech_tags : []),
+            proj.thumbnail_url || '/assets/placeholder-avatar.svg',
+            proj.screenshot1_url || null,
+            proj.screenshot1_desc || null,
+            proj.screenshot2_url || null,
+            proj.screenshot2_desc || null,
+            sanitizedVideo,
+            sanitizedPowerBi,
+            sanitizedLinkedIn,
+            sanitizedGitHub,
+            proj.platform_name || null,
+            sanitizedExternal,
+            proj.is_visible !== false,
+            proj.sort_order || 0
+          ]
+        );
+      } else if (isFromBackup) {
         await client.query(
           `INSERT INTO projects 
             (name, description, project_type, domain, other_tools, short_info,
@@ -161,12 +227,12 @@ export async function seedDatabase(force = false) {
             proj.screenshot1_desc || null,
             proj.screenshot2_url || null,
             proj.screenshot2_desc || null,
-            proj.video_url || null,
-            proj.powerbi_url || null,
-            proj.linkedin_url || null,
-            proj.github_url || null,
+            sanitizedVideo,
+            sanitizedPowerBi,
+            sanitizedLinkedIn,
+            sanitizedGitHub,
             proj.platform_name || null,
-            proj.external_link || null,
+            sanitizedExternal,
             proj.is_visible !== false,
             proj.sort_order || 0
           ]
@@ -181,46 +247,83 @@ export async function seedDatabase(force = false) {
             proj.description,
             JSON.stringify(proj.tech_tags || []),
             proj.thumbnail_url,
-            proj.video_url,
-            proj.external_link,
-            proj.sort_order,
+            sanitizedVideo,
+            sanitizedExternal,
+            proj.sort_order || 0,
             true
           ]
         );
       }
     }
+    try {
+      await client.query("SELECT setval(pg_get_serial_sequence('projects', 'id'), COALESCE((SELECT MAX(id) FROM projects), 1))");
+    } catch (_) {}
 
     // 4. Insert Skills
     const savedSkills = loadJsonBackup('skills_backup.json');
     const skillsToSeed = (Array.isArray(savedSkills) && savedSkills.length > 0) ? savedSkills : data.skills;
     for (const skill of skillsToSeed) {
-      await client.query(
-        `INSERT INTO skills 
-          (category, value, sort_order)
-         VALUES ($1, $2, $3)`,
-        [
-          skill.category,
-          skill.value,
-          skill.sort_order
-        ]
-      );
+      if (skill.id) {
+        await client.query(
+          `INSERT INTO skills 
+            (id, category, value, sort_order)
+           VALUES ($1, $2, $3, $4)`,
+          [
+            skill.id,
+            skill.category,
+            skill.value,
+            skill.sort_order || 0
+          ]
+        );
+      } else {
+        await client.query(
+          `INSERT INTO skills 
+            (category, value, sort_order)
+           VALUES ($1, $2, $3)`,
+          [
+            skill.category,
+            skill.value,
+            skill.sort_order || 0
+          ]
+        );
+      }
     }
+    try {
+      await client.query("SELECT setval(pg_get_serial_sequence('skills', 'id'), COALESCE((SELECT MAX(id) FROM skills), 1))");
+    } catch (_) {}
 
     // 5. Insert FAQ
     const savedFaq = loadJsonBackup('faq_backup.json');
     const faqToSeed = (Array.isArray(savedFaq) && savedFaq.length > 0) ? savedFaq : data.faq;
     for (const faqItem of faqToSeed) {
-      await client.query(
-        `INSERT INTO faq 
-          (question, answer, sort_order)
-         VALUES ($1, $2, $3)`,
-        [
-          faqItem.question,
-          faqItem.answer,
-          faqItem.sort_order
-        ]
-      );
+      if (faqItem.id) {
+        await client.query(
+          `INSERT INTO faq 
+            (id, question, answer, sort_order)
+           VALUES ($1, $2, $3, $4)`,
+          [
+            faqItem.id,
+            faqItem.question,
+            faqItem.answer,
+            faqItem.sort_order || 0
+          ]
+        );
+      } else {
+        await client.query(
+          `INSERT INTO faq 
+            (question, answer, sort_order)
+           VALUES ($1, $2, $3)`,
+          [
+            faqItem.question,
+            faqItem.answer,
+            faqItem.sort_order || 0
+          ]
+        );
+      }
     }
+    try {
+      await client.query("SELECT setval(pg_get_serial_sequence('faq', 'id'), COALESCE((SELECT MAX(id) FROM faq), 1))");
+    } catch (_) {}
 
     await client.query('COMMIT');
 

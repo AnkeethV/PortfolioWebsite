@@ -362,7 +362,7 @@
         <h3 id="modal-project-title" class="modal-title">Edit Project</h3>
         <button type="button" class="btn-icon modal-close" aria-label="Close modal">✕</button>
       </div>
-      <form id="form-project">
+      <form id="form-project" novalidate>
         <input type="hidden" id="proj-id">
 
         <!-- Row 1: Project Type -->
@@ -584,11 +584,11 @@
         <div class="form-grid-2">
           <div class="form-group">
             <label for="proj-linkedin" class="form-label">LinkedIn Post link</label>
-            <input type="url" id="proj-linkedin" class="form-input" placeholder="https://www.linkedin.com/feed/update/...">
+            <input type="text" id="proj-linkedin" class="form-input" placeholder="https://www.linkedin.com/feed/update/...">
           </div>
           <div class="form-group">
             <label for="proj-github" class="form-label">Project GitHub Link</label>
-            <input type="url" id="proj-github" class="form-input" placeholder="https://github.com/...">
+            <input type="text" id="proj-github" class="form-input" placeholder="https://github.com/...">
           </div>
         </div>
 
@@ -600,7 +600,7 @@
           </div>
           <div class="form-group">
             <label for="proj-link" class="form-label">Project Link</label>
-            <input type="url" id="proj-link" class="form-input" placeholder="Enter Project Link">
+            <input type="text" id="proj-link" class="form-input" placeholder="Enter Project Link">
           </div>
         </div>
 

@@ -1207,6 +1207,24 @@ function openAddProject() {
   openModal('modal-project');
 }
 
+function cleanPlaceholderUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed || trimmed.toLowerCase().includes('not specified in the source')) return '';
+  return trimmed;
+}
+
+function normalizeWebUrl(url) {
+  if (!url || typeof url !== 'string') return null;
+  let trimmed = url.trim();
+  if (!trimmed || trimmed.toLowerCase().includes('not specified in the source')) return null;
+  if (/^(https?:\/\/|\/|blob:|data:)/i.test(trimmed)) {
+    return trimmed;
+  }
+  // Auto-prepend https:// if starts with www. or domain-like string
+  return `https://${trimmed}`;
+}
+
 function openEditProject(id) {
   const proj = allProjects.find(item => String(item.id) === String(id));
   if (!proj) return;
@@ -1221,13 +1239,13 @@ function openEditProject(id) {
   document.getElementById('proj-desc').value = proj.description || '';
   document.getElementById('proj-s1-desc').value = proj.screenshot1_desc || '';
   document.getElementById('proj-s2-desc').value = proj.screenshot2_desc || '';
-  document.getElementById('proj-video-link').value = proj.video_url || '';
-  document.getElementById('proj-powerbi').value = proj.powerbi_url || '';
+  document.getElementById('proj-video-link').value = cleanPlaceholderUrl(proj.video_url);
+  document.getElementById('proj-powerbi').value = cleanPlaceholderUrl(proj.powerbi_url);
   document.getElementById('proj-tags').value = (proj.tech_tags || []).join(', ');
-  document.getElementById('proj-linkedin').value = proj.linkedin_url || '';
-  document.getElementById('proj-github').value = proj.github_url || '';
+  document.getElementById('proj-linkedin').value = cleanPlaceholderUrl(proj.linkedin_url);
+  document.getElementById('proj-github').value = cleanPlaceholderUrl(proj.github_url);
   document.getElementById('proj-platform').value = proj.platform_name || '';
-  document.getElementById('proj-link').value = proj.external_link || '';
+  document.getElementById('proj-link').value = cleanPlaceholderUrl(proj.external_link);
 
   if (proj.is_visible === false || proj.is_visible === 'false' || proj.is_visible === 0) {
     document.getElementById('proj-visible-no').checked = true;
@@ -1266,7 +1284,8 @@ function openEditProject(id) {
 }
 
 async function handleSaveProject(e) {
-  e.preventDefault();
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+
   const id = document.getElementById('proj-id').value;
   const project_type = document.getElementById('proj-type').value;
   const domain = document.getElementById('proj-domain').value.trim();
@@ -1282,15 +1301,15 @@ async function handleSaveProject(e) {
   const screenshot2_url = document.getElementById('proj-screenshot2').value || null;
   const screenshot2_desc = document.getElementById('proj-s2-desc').value.trim() || null;
 
-  const videoInputUrl = document.getElementById('proj-video-link').value.trim();
+  const videoInputUrl = normalizeWebUrl(document.getElementById('proj-video-link').value);
   const uploadedVideoUrl = document.getElementById('proj-video').value;
   const video_url = videoInputUrl || uploadedVideoUrl || null;
 
-  const powerbi_url = document.getElementById('proj-powerbi').value.trim() || null;
-  const linkedin_url = document.getElementById('proj-linkedin').value.trim() || null;
-  const github_url = document.getElementById('proj-github').value.trim() || null;
+  const powerbi_url = normalizeWebUrl(document.getElementById('proj-powerbi').value);
+  const linkedin_url = normalizeWebUrl(document.getElementById('proj-linkedin').value);
+  const github_url = normalizeWebUrl(document.getElementById('proj-github').value);
   const platform_name = document.getElementById('proj-platform').value.trim() || null;
-  const external_link = document.getElementById('proj-link').value.trim() || null;
+  const external_link = normalizeWebUrl(document.getElementById('proj-link').value);
   const is_visible = document.getElementById('proj-visible-yes').checked;
 
   const payload = {
@@ -1348,7 +1367,7 @@ async function handleSaveProject(e) {
       showToast(data.error || 'Failed to save project', 'error');
     }
   } catch (err) {
-    showToast('Error saving project', 'error');
+    showToast('Error saving project: ' + (err.message || 'Network issue'), 'error');
   }
 }
 

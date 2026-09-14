@@ -4,47 +4,47 @@
     "question": "What are your strongest skills?",
     "answer": "My strongest skills are stakeholder management, customer-focused problem solving, analytical thinking, Excel, SQL, Power BI, dashboard development, and AI-assisted development. I am particularly strong at understanding requirements and pain points, asking the right questions, and translating business needs into practical, actionable solutions.",
     "sort_order": 1,
-    "created_at": "2026-09-13T17:43:04.248Z",
-    "updated_at": "2026-09-13T17:43:04.248Z"
+    "created_at": "2026-09-11T17:31:42.825Z",
+    "updated_at": "2026-09-11T17:31:42.825Z"
   },
   {
     "id": 2,
     "question": "Are you open to relocation?",
     "answer": "No",
     "sort_order": 2,
-    "created_at": "2026-09-13T17:43:04.248Z",
-    "updated_at": "2026-09-13T17:43:04.248Z"
+    "created_at": "2026-09-11T17:31:42.825Z",
+    "updated_at": "2026-09-11T17:31:42.825Z"
   },
   {
     "id": 3,
     "question": "What is your notice period / availability?",
     "answer": "60 Days",
     "sort_order": 3,
-    "created_at": "2026-09-13T17:43:04.248Z",
-    "updated_at": "2026-09-13T17:43:04.248Z"
+    "created_at": "2026-09-11T17:31:42.825Z",
+    "updated_at": "2026-09-11T17:31:42.825Z"
   },
   {
     "id": 4,
     "question": "What kind of roles are you looking for?",
     "answer": "I am particularly interested in Data Analyst, Business Analyst, AI, Operations, and customer-focused Data roles where I can combine my technical capabilities with stakeholder engagement and business communication.",
     "sort_order": 4,
-    "created_at": "2026-09-13T17:43:04.248Z",
-    "updated_at": "2026-09-13T17:43:04.248Z"
+    "created_at": "2026-09-11T17:31:42.825Z",
+    "updated_at": "2026-09-11T17:31:42.825Z"
   },
   {
     "id": 5,
     "question": "Tell me about a challenging project you worked on.",
     "answer": "At Kaseya, I worked on customer issues and process improvements involving resolution-time and customer-feedback data. I analyzed the underlying data, interacted with the client, and implemented process changes that reduced average resolution time by 8% over three months; I also helped develop a standardized process that reduced repeated-issue volume by 85%.",
     "sort_order": 5,
-    "created_at": "2026-09-13T17:43:04.248Z",
-    "updated_at": "2026-09-13T17:43:04.248Z"
+    "created_at": "2026-09-11T17:31:42.825Z",
+    "updated_at": "2026-09-11T17:31:42.825Z"
   },
   {
     "id": 6,
     "question": "What makes you different from other candidates?",
     "answer": "I combine client-facing experience, stakeholder management, data and BI skills, and AI capabilities. My approach is to understand the people and the problem first, analyze the data, communicate the insight clearly, and work toward a practical solution that bridges stakeholders and technology.",
     "sort_order": 6,
-    "created_at": "2026-09-13T17:43:04.248Z",
-    "updated_at": "2026-09-13T17:43:04.248Z"
+    "created_at": "2026-09-11T17:31:42.825Z",
+    "updated_at": "2026-09-11T17:31:42.825Z"
   }
 ]

@@ -141,69 +141,133 @@ function closeLightbox() {
     `;
   }
 
+  const ensureHttpUrl = (url) => {
+    if (!url || typeof url !== 'string') return '';
+    const trimmed = url.trim();
+    if (!trimmed || trimmed.toLowerCase().includes('not specified in the source')) return '';
+    if (/^(https?:\/\/|\/|blob:|data:)/i.test(trimmed)) {
+      return trimmed;
+    }
+    return `https://${trimmed}`;
+  };
+
+  const extractYouTubeId = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  const safeVideoUrl = ensureHttpUrl(project.video_url);
+  const safePowerBiUrl = ensureHttpUrl(project.powerbi_url);
+  const safeGithubUrl = ensureHttpUrl(project.github_url);
+  const safeLinkedinUrl = ensureHttpUrl(project.linkedin_url);
+  const safeExternalLink = ensureHttpUrl(project.external_link);
+
+  const iconExt = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`;
+
   // Format video embed if provided
   let videoHtml = '';
-  if (project.video_url && /\.(mp4|webm|ogg|mov|mkv)$/i.test(project.video_url)) {
-    videoHtml = `
-      <div style="margin-top: 1.5rem; border-radius: 12px; overflow: hidden; background: #000;">
-        <video controls playsinline preload="metadata" style="width: 100%; max-height: 360px; display: block;" src="${escapeHtml(project.video_url)}">
-          <source src="${escapeHtml(project.video_url)}">
-          Your browser does not support HTML video playback.
-        </video>
-      </div>
-    `;
-  } else if (project.video_url && (project.video_url.includes('youtube.com') || project.video_url.includes('youtu.be') || project.video_url.includes('vimeo.com') || project.video_url.includes('loom.com'))) {
-    videoHtml = `
-      <div style="margin-top: 1.25rem;">
-        <a href="${escapeHtml(project.video_url)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-secondary" style="display: inline-flex; gap: 8px; align-items: center;">
-          <span>▶ Watch Video Demo</span>
-        </a>
-      </div>
-    `;
+  if (safeVideoUrl) {
+    if (/\.(mp4|webm|ogg|mov|mkv)$/i.test(safeVideoUrl)) {
+      videoHtml = `
+        <div style="margin-top: 1.5rem; border-radius: 12px; overflow: hidden; background: #000; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);">
+          <video controls playsinline preload="metadata" style="width: 100%; max-height: 380px; display: block;" src="${escapeHtml(safeVideoUrl)}">
+            <source src="${escapeHtml(safeVideoUrl)}">
+            Your browser does not support HTML video playback.
+          </video>
+        </div>
+      `;
+    } else {
+      const ytId = extractYouTubeId(safeVideoUrl);
+      if (ytId) {
+        videoHtml = `
+          <div style="margin-top: 1.5rem; border-radius: 12px; overflow: hidden; background: #000; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); aspect-ratio: 16/9; max-height: 400px;">
+            <iframe
+              src="https://www.youtube-nocookie.com/embed/${escapeHtml(ytId)}"
+              title="${escapeHtml(project.name)} Video Demo"
+              style="width: 100%; height: 100%; border: 0;"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen>
+            </iframe>
+          </div>
+          <div style="margin-top: 1rem; display: flex; gap: 10px; align-items: center;">
+            <a href="${escapeHtml(safeVideoUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-secondary" style="display: inline-flex; gap: 8px; align-items: center;">
+              <span>▶ Watch on YouTube</span>
+              ${iconExt}
+            </a>
+          </div>
+        `;
+      } else {
+        videoHtml = `
+          <div style="margin-top: 1.5rem; padding: 16px 20px; border-radius: 12px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--color-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 1.5rem;">🎥</span>
+              <div>
+                <strong style="display: block; font-size: 14.5px; color: var(--color-text-primary);">Video Demonstration</strong>
+                <span style="font-size: 12.5px; color: var(--color-text-muted);">Watch the walkthrough demo video for this project</span>
+              </div>
+            </div>
+            <a href="${escapeHtml(safeVideoUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-secondary" style="display: inline-flex; gap: 8px; align-items: center;">
+              <span>▶ Watch Video Demo</span>
+              ${iconExt}
+            </a>
+          </div>
+        `;
+      }
+    }
   }
 
   // Build Action Links
   const actionButtons = [];
-  const iconExt = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`;
 
-  if (project.powerbi_url && project.powerbi_url.toLowerCase() !== 'not applicable' && project.powerbi_url.startsWith('http')) {
+  if (safeVideoUrl) {
     actionButtons.push(`
-      <a href="${escapeHtml(project.powerbi_url)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-primary">
+      <a href="${escapeHtml(safeVideoUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-secondary" style="display: inline-flex; gap: 8px; align-items: center;">
+        <span>▶ Video Demo</span>
+        ${iconExt}
+      </a>
+    `);
+  }
+
+  if (safePowerBiUrl && safePowerBiUrl.toLowerCase() !== 'not applicable') {
+    actionButtons.push(`
+      <a href="${escapeHtml(safePowerBiUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-primary">
         <span>Live PowerBI Dashboard</span>
         ${iconExt}
       </a>
     `);
   }
 
-  if (project.github_url && project.github_url.startsWith('http')) {
+  if (safeGithubUrl) {
     actionButtons.push(`
-      <a href="${escapeHtml(project.github_url)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-secondary">
+      <a href="${escapeHtml(safeGithubUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-secondary">
         <span>GitHub Repo</span>
         ${iconExt}
       </a>
     `);
-  } else if (project.external_link && project.external_link.includes('github.com')) {
+  } else if (safeExternalLink && safeExternalLink.includes('github.com')) {
     actionButtons.push(`
-      <a href="${escapeHtml(project.external_link)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-secondary">
+      <a href="${escapeHtml(safeExternalLink)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-secondary">
         <span>GitHub Repo</span>
         ${iconExt}
       </a>
     `);
   }
 
-  if (project.linkedin_url && project.linkedin_url.startsWith('http')) {
+  if (safeLinkedinUrl) {
     actionButtons.push(`
-      <a href="${escapeHtml(project.linkedin_url)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-secondary">
+      <a href="${escapeHtml(safeLinkedinUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-secondary">
         <span>LinkedIn Post</span>
         ${iconExt}
       </a>
     `);
   }
 
-  if (project.external_link && !project.external_link.includes('github.com') && project.external_link.startsWith('http')) {
+  if (safeExternalLink && !safeExternalLink.includes('github.com')) {
     const label = project.platform_name ? `${project.platform_name} Demo` : 'Project Link';
     actionButtons.push(`
-      <a href="${escapeHtml(project.external_link)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-primary">
+      <a href="${escapeHtml(safeExternalLink)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-primary">
         <span>${escapeHtml(label)}</span>
         ${iconExt}
       </a>

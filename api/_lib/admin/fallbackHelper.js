@@ -13,11 +13,23 @@ export function getProfileData() {
 }
 
 export function getFallbackProjects() {
+  const cleanLink = (link) => {
+    if (!link || typeof link !== 'string') return '';
+    const trimmed = link.trim();
+    if (!trimmed || trimmed.toLowerCase().includes('not specified in the source')) return '';
+    return trimmed;
+  };
+
   const saved = loadJsonBackup('projects_backup.json');
   if (Array.isArray(saved) && saved.length > 0) {
     return saved.map(row => ({
       ...row,
       tech_tags: typeof row.tech_tags === 'string' ? JSON.parse(row.tech_tags) : (row.tech_tags || []),
+      external_link: cleanLink(row.external_link),
+      video_url: cleanLink(row.video_url),
+      powerbi_url: cleanLink(row.powerbi_url),
+      linkedin_url: cleanLink(row.linkedin_url),
+      github_url: cleanLink(row.github_url),
       is_visible: row.is_visible !== false
     }));
   }
@@ -33,11 +45,11 @@ export function getFallbackProjects() {
     short_info: proj.short_info || '',
     tech_tags: Array.isArray(proj.tech_tags) ? proj.tech_tags : [],
     thumbnail_url: proj.thumbnail_url || '/assets/placeholder-avatar.svg',
-    video_url: proj.video_url || null,
-    powerbi_url: proj.powerbi_url || '',
-    linkedin_url: proj.linkedin_url || '',
-    github_url: proj.github_url || '',
-    external_link: proj.external_link || '',
+    video_url: cleanLink(proj.video_url),
+    powerbi_url: cleanLink(proj.powerbi_url),
+    linkedin_url: cleanLink(proj.linkedin_url),
+    github_url: cleanLink(proj.github_url),
+    external_link: cleanLink(proj.external_link),
     is_visible: proj.is_visible !== false,
     sort_order: proj.sort_order || idx + 1
   }));

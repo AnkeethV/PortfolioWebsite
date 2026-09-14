@@ -40,43 +40,56 @@ async function getPglite() {
     // On Vercel, serverless filesystem is read-only except /tmp
     const isVercel = Boolean(process.env.VERCEL);
     const dataDir = process.env.PG_DATA_DIR || (isVercel ? '/tmp/pglite' : path.resolve(__dirname, '../../.data/pglite'));
-    try {
-      if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir, { recursive: true });
-      } else {
-        // Clean up stale postmaster.pid and lock files from crashed/killed processes
-        const pidFile = path.join(dataDir, 'postmaster.pid');
-        if (fs.existsSync(pidFile)) {
-          try { fs.unlinkSync(pidFile); } catch (_) {}
+    
+    const cleanLocks = () => {
+      try {
+        if (fs.existsSync(dataDir)) {
+          const pidFile = path.join(dataDir, 'postmaster.pid');
+          if (fs.existsSync(pidFile)) {
+            try { fs.unlinkSync(pidFile); } catch (_) {}
+          }
+          const lockFiles = fs.readdirSync(dataDir).filter(f => f.startsWith('.s.PGSQL') && f.includes('.lock'));
+          lockFiles.forEach(f => {
+            try { fs.unlinkSync(path.join(dataDir, f)); } catch (_) {}
+          });
+        } else {
+          fs.mkdirSync(dataDir, { recursive: true });
         }
-        const lockFiles = fs.readdirSync(dataDir).filter(f => f.startsWith('.s.PGSQL') && f.includes('.lock'));
-        lockFiles.forEach(f => {
-          try { fs.unlinkSync(path.join(dataDir, f)); } catch (_) {}
-        });
-      }
-    } catch (_) {}
+      } catch (_) {}
+    };
+
+    cleanLocks();
 
     try {
       const instance = new PGlite(dataDir);
       await instance.waitReady;
       pgliteInstance = instance;
     } catch (err) {
-      console.warn('PGlite data directory corrupted or failed to load. Re-initializing clean database...', err.message);
+      console.warn('Initial PGlite load encountered an issue. Retrying with lock cleanup...', err.message);
+      cleanLocks();
+      await new Promise(r => setTimeout(r, 150));
       try {
-        if (typeof fs.rmSync === 'function') {
-          fs.rmSync(dataDir, { recursive: true, force: true });
-        }
-        fs.mkdirSync(dataDir, { recursive: true });
-        const cleanInstance = new PGlite(dataDir);
-        await cleanInstance.waitReady;
-        pgliteInstance = cleanInstance;
+        const retryInstance = new PGlite(dataDir);
+        await retryInstance.waitReady;
+        pgliteInstance = retryInstance;
+      } catch (retryErr) {
+        console.warn('PGlite data directory unrecoverable. Re-initializing clean database...', retryErr.message);
         try {
-          const { seedDatabase } = await import('./seed.js');
-          await seedDatabase(false);
-        } catch (_) {}
-      } catch (fatalErr) {
-        pgliteInstance = null;
-        throw fatalErr;
+          if (typeof fs.rmSync === 'function') {
+            fs.rmSync(dataDir, { recursive: true, force: true });
+          }
+          fs.mkdirSync(dataDir, { recursive: true });
+          const cleanInstance = new PGlite(dataDir);
+          await cleanInstance.waitReady;
+          pgliteInstance = cleanInstance;
+          try {
+            const { seedDatabase } = await import('./seed.js');
+            await seedDatabase(false);
+          } catch (_) {}
+        } catch (fatalErr) {
+          pgliteInstance = null;
+          throw fatalErr;
+        }
       }
     }
   }
