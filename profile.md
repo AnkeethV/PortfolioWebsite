@@ -3,7 +3,7 @@
 ## Personal Info
 
 * Name: Ankeeth V
-* Current Title: Senior Engineer & Lead Data Analyst
+* Current Title: Lead Data Analyst & Solutions Architect
 * Location: Bengaluru, Karnataka, India
 * Email: ankeeth.v@gmail.com
 * LinkedIn: https://www.linkedin.com/in/ankeeth-v-
@@ -44,9 +44,9 @@
 
 ## Skills
 
-* Technical: Data Analysis, Data Visualization, Dashboard Development, KPI Analysis, AI-assisted development, Generative AI, LLMs
+* Technical: Data Analysis, Data Visualization, Dashboard Development, KPI Analysis, AI-assisted development, Generative AI, LLMs, Python, DAX, Data Modeling, ETL, Statistics
 * Tools & Platforms: GitHub, AI Tools, Microsoft/Windows environments, Advanced Excel, SQL, Power BI
-* Soft Skills: Critical Thinking, Actionable Insights, Stakeholder Communication, Stakeholder Management, Customer Service, Requirement Gathering, Active Listening, Communication, Collaboration, Root-Cause Analysis, Structured Thinking, Solution-Oriented Approach, Business Understanding
+* Soft Skills: Critical Thinking, Actionable Insights, Stakeholder Communication, Stakeholder Management, Customer Service, Requirement Gathering, Active Listening, Communication, Collaboration, Root-Cause Analysis, Structured Thinking, Solution-Oriented Approach, Business Understanding, Problem Solving, Data Storytelling
 
 ## FAQ
 

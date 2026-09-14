@@ -34,6 +34,14 @@ if (connectionString) {
   isUsingLocalFallback = true;
 }
 
+let pgliteQueue = Promise.resolve();
+
+function enqueuePglite(fn) {
+  const next = pgliteQueue.then(fn, fn);
+  pgliteQueue = next.catch(() => {});
+  return next;
+}
+
 async function getPglite() {
   if (!pgliteInstance) {
     const { PGlite } = await import('@electric-sql/pglite');
@@ -65,31 +73,17 @@ async function getPglite() {
       await instance.waitReady;
       pgliteInstance = instance;
     } catch (err) {
-      console.warn('Initial PGlite load encountered an issue. Retrying with lock cleanup...', err.message);
+      console.warn('Initial PGlite load encountered a lock issue. Retrying with lock cleanup...', err.message);
       cleanLocks();
-      await new Promise(r => setTimeout(r, 150));
+      await new Promise(r => setTimeout(r, 200));
       try {
         const retryInstance = new PGlite(dataDir);
         await retryInstance.waitReady;
         pgliteInstance = retryInstance;
       } catch (retryErr) {
-        console.warn('PGlite data directory unrecoverable. Re-initializing clean database...', retryErr.message);
-        try {
-          if (typeof fs.rmSync === 'function') {
-            fs.rmSync(dataDir, { recursive: true, force: true });
-          }
-          fs.mkdirSync(dataDir, { recursive: true });
-          const cleanInstance = new PGlite(dataDir);
-          await cleanInstance.waitReady;
-          pgliteInstance = cleanInstance;
-          try {
-            const { seedDatabase } = await import('./seed.js');
-            await seedDatabase(false);
-          } catch (_) {}
-        } catch (fatalErr) {
-          pgliteInstance = null;
-          throw fatalErr;
-        }
+        console.error('PGlite connection failed. Preserving disk data and throwing error:', retryErr.message);
+        pgliteInstance = null;
+        throw retryErr;
       }
     }
   }
@@ -126,7 +120,6 @@ function isStaleFileError(err) {
  */
 export async function query(text, params = []) {
   if (pool) {
-    const start = Date.now();
     try {
       const res = await pool.query(text, params);
       return res;
@@ -135,28 +128,30 @@ export async function query(text, params = []) {
       throw err;
     }
   } else {
-    // PGlite fallback with automatic recovery on stale file descriptors
-    let pglite = await getPglite();
-    try {
-      const res = await pglite.query(text, params);
-      return {
-        rows: res.rows || [],
-        rowCount: res.rows ? res.rows.length : (res.affectedRows || 0)
-      };
-    } catch (err) {
-      if (isStaleFileError(err)) {
-        console.warn('PGlite file descriptor error detected. Reconnecting client without wiping disk...', err.message);
-        await resetPglite(false);
-        pglite = await getPglite();
+    // PGlite fallback strictly serialized through queue to prevent WASM concurrency aborts
+    return enqueuePglite(async () => {
+      let pglite = await getPglite();
+      try {
         const res = await pglite.query(text, params);
         return {
           rows: res.rows || [],
           rowCount: res.rows ? res.rows.length : (res.affectedRows || 0)
         };
+      } catch (err) {
+        if (isStaleFileError(err)) {
+          console.warn('PGlite file descriptor error detected. Reconnecting client without wiping disk...', err.message);
+          await resetPglite(false);
+          pglite = await getPglite();
+          const res = await pglite.query(text, params);
+          return {
+            rows: res.rows || [],
+            rowCount: res.rows ? res.rows.length : (res.affectedRows || 0)
+          };
+        }
+        console.error('PGlite query error:', { query: text, error: err.message });
+        throw err;
       }
-      console.error('PGlite query error:', { query: text, error: err.message });
-      throw err;
-    }
+    });
   }
 }
 
@@ -173,19 +168,21 @@ export async function exec(sql) {
       client.release();
     }
   } else {
-    let pglite = await getPglite();
-    try {
-      await pglite.exec(sql);
-    } catch (err) {
-      if (isStaleFileError(err)) {
-        console.warn('PGlite file descriptor error in exec. Reconnecting client without wiping disk...', err.message);
-        await resetPglite(false);
-        pglite = await getPglite();
+    return enqueuePglite(async () => {
+      let pglite = await getPglite();
+      try {
         await pglite.exec(sql);
-        return;
+      } catch (err) {
+        if (isStaleFileError(err)) {
+          console.warn('PGlite file descriptor error in exec. Reconnecting client without wiping disk...', err.message);
+          await resetPglite(false);
+          pglite = await getPglite();
+          await pglite.exec(sql);
+          return;
+        }
+        throw err;
       }
-      throw err;
-    }
+    });
   }
 }
 
@@ -200,21 +197,8 @@ export async function getClient() {
       release: () => client.release(),
     };
   } else {
-    let pglite = await getPglite();
     return {
-      query: async (sql, params) => {
-        try {
-          return await pglite.query(sql, params);
-        } catch (err) {
-          if (isStaleFileError(err)) {
-            console.warn('PGlite transactional client error. Resetting instance and retrying...');
-            await resetPglite();
-            pglite = await getPglite();
-            return await pglite.query(sql, params);
-          }
-          throw err;
-        }
-      },
+      query: (sql, params) => query(sql, params),
       release: () => {},
     };
   }

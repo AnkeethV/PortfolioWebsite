@@ -1,7 +1,7 @@
 {
   "id": 1,
   "name": "Ankeeth V",
-  "title": "Senior Engineer & Lead Data Analyst",
+  "title": "Lead Data Analyst & Solutions Architect",
   "location": "Bengaluru, Karnataka, India",
   "email": "ankeeth.v@gmail.com",
   "linkedin_url": "https://www.linkedin.com/in/ankeeth-v-",
@@ -9,6 +9,6 @@
   "bio": "Updated bio testing admin capabilities.",
   "resume_url": "/resume.pdf",
   "photo_url": "/assets/placeholder-avatar.svg",
-  "created_at": "2026-09-11T17:31:42.825Z",
-  "updated_at": "2026-09-14T14:26:22.551Z"
+  "created_at": "2026-09-14T14:42:59.953Z",
+  "updated_at": "2026-09-14T17:07:36.674Z"
 }

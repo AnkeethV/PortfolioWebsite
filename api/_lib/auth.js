@@ -6,36 +6,19 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { query } from './db.js';
+import { saveJsonBackup, loadJsonBackup } from './dataStore.js';
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const isVercel = Boolean(process.env.VERCEL);
-const settingsFilePath = isVercel
-  ? '/tmp/admin_settings.json'
-  : path.resolve(__dirname, '../../.data/admin_settings.json');
-
 function readLocalSettings() {
-  try {
-    if (fs.existsSync(settingsFilePath)) {
-      const content = fs.readFileSync(settingsFilePath, 'utf-8');
-      return JSON.parse(content);
-    }
-  } catch (_) {}
-  return {};
+  const loaded = loadJsonBackup('admin_settings.json');
+  return loaded && typeof loaded === 'object' ? loaded : {};
 }
 
 function writeLocalSettings(data) {
-  try {
-    const dir = path.dirname(settingsFilePath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    const existing = readLocalSettings();
-    const merged = { ...existing, ...data, updated_at: new Date().toISOString() };
-    fs.writeFileSync(settingsFilePath, JSON.stringify(merged, null, 2), 'utf-8');
-  } catch (err) {
-    console.warn('Could not write admin_settings.json:', err.message);
-  }
+  const existing = readLocalSettings();
+  const merged = { ...existing, ...data, updated_at: new Date().toISOString() };
+  saveJsonBackup('admin_settings.json', merged);
 }
 
 function verifyHash(password, stored) {

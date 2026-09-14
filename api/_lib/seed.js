@@ -22,13 +22,12 @@ export async function initSchema() {
  */
 export async function isSeeded() {
   try {
-    const [pRes, projRes, expRes, skillRes, faqRes] = await Promise.all([
-      query('SELECT COUNT(*) AS count FROM personal_info'),
-      query('SELECT COUNT(*) AS count FROM projects'),
-      query('SELECT COUNT(*) AS count FROM experience'),
-      query('SELECT COUNT(*) AS count FROM skills'),
-      query('SELECT COUNT(*) AS count FROM faq')
-    ]);
+    const pRes = await query('SELECT COUNT(*) AS count FROM personal_info');
+    const projRes = await query('SELECT COUNT(*) AS count FROM projects');
+    const expRes = await query('SELECT COUNT(*) AS count FROM experience');
+    const skillRes = await query('SELECT COUNT(*) AS count FROM skills');
+    const faqRes = await query('SELECT COUNT(*) AS count FROM faq');
+
     const pCount = parseInt(pRes.rows[0]?.count || '0', 10);
     const projCount = parseInt(projRes.rows[0]?.count || '0', 10);
     const expCount = parseInt(expRes.rows[0]?.count || '0', 10);
