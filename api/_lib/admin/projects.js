@@ -171,7 +171,117 @@ export default async function handler(req, res) {
 
       const existingRes = await query('SELECT * FROM projects WHERE id = $1', [id]);
       if (existingRes.rows.length === 0) {
-        return res.status(404).json({ success: false, error: 'Project entry not found' });
+        // Upsert fallback: If ID is not found in the DB (e.g. cold-boot reset or sequence mismatch),
+        // insert the project smoothly so user changes are never lost or rejected.
+        const name = (b.name && b.name.trim()) ? b.name.trim() : 'Untitled Project';
+        const description = (b.description && b.description.trim()) ? b.description.trim() : '';
+        let order = b.sort_order;
+        if (order === undefined || order === null) {
+          const maxOrderRes = await query('SELECT COALESCE(MAX(sort_order), 0) + 1 AS next_order FROM projects');
+          order = maxOrderRes.rows[0]?.next_order || 1;
+        }
+        const tagsJson = JSON.stringify(Array.isArray(b.tech_tags) ? b.tech_tags : []);
+        const visible = b.is_visible !== undefined ? (b.is_visible === true || b.is_visible === 'true' || b.is_visible === 1) : true;
+
+        let insertRes;
+        const numericId = parseInt(id, 10);
+        if (!isNaN(numericId) && numericId > 0) {
+          try {
+            insertRes = await query(
+              `INSERT INTO projects (
+                id, name, description, project_type, domain, other_tools, short_info,
+                tech_tags, thumbnail_url, screenshot1_url, screenshot1_desc,
+                screenshot2_url, screenshot2_desc, video_url, powerbi_url,
+                linkedin_url, github_url, platform_name, external_link,
+                is_visible, sort_order, updated_at
+              )
+              VALUES (
+                $1, $2, $3, $4, $5, $6, $7,
+                $8, $9, $10, $11,
+                $12, $13, $14, $15,
+                $16, $17, $18, $19,
+                $20, $21, NOW()
+              )
+              RETURNING *`,
+              [
+                numericId,
+                name,
+                description,
+                b.project_type || null,
+                b.domain || null,
+                b.other_tools || null,
+                b.short_info || null,
+                tagsJson,
+                b.thumbnail_url || '/assets/placeholder-avatar.svg',
+                b.screenshot1_url || null,
+                b.screenshot1_desc || null,
+                b.screenshot2_url || null,
+                b.screenshot2_desc || null,
+                b.video_url || null,
+                b.powerbi_url || null,
+                b.linkedin_url || null,
+                b.github_url || null,
+                b.platform_name || null,
+                b.external_link || null,
+                visible,
+                order
+              ]
+            );
+            try {
+              await query("SELECT setval(pg_get_serial_sequence('projects', 'id'), COALESCE((SELECT MAX(id) FROM projects), 1))");
+            } catch (_) {}
+          } catch (_) {
+            insertRes = null;
+          }
+        }
+
+        if (!insertRes || insertRes.rows.length === 0) {
+          insertRes = await query(
+            `INSERT INTO projects (
+              name, description, project_type, domain, other_tools, short_info,
+              tech_tags, thumbnail_url, screenshot1_url, screenshot1_desc,
+              screenshot2_url, screenshot2_desc, video_url, powerbi_url,
+              linkedin_url, github_url, platform_name, external_link,
+              is_visible, sort_order, updated_at
+            )
+            VALUES (
+              $1, $2, $3, $4, $5, $6,
+              $7, $8, $9, $10,
+              $11, $12, $13, $14,
+              $15, $16, $17, $18,
+              $19, $20, NOW()
+            )
+            RETURNING *`,
+            [
+              name,
+              description,
+              b.project_type || null,
+              b.domain || null,
+              b.other_tools || null,
+              b.short_info || null,
+              tagsJson,
+              b.thumbnail_url || '/assets/placeholder-avatar.svg',
+              b.screenshot1_url || null,
+              b.screenshot1_desc || null,
+              b.screenshot2_url || null,
+              b.screenshot2_desc || null,
+              b.video_url || null,
+              b.powerbi_url || null,
+              b.linkedin_url || null,
+              b.github_url || null,
+              b.platform_name || null,
+              b.external_link || null,
+              visible,
+              order
+            ]
+          );
+        }
+
+        const created = insertRes.rows[0];
+        created.tech_tags = typeof created.tech_tags === 'string' ? JSON.parse(created.tech_tags) : created.tech_tags;
+        created.is_visible = created.is_visible !== false;
+        await syncBackup();
+        return res.status(200).json({ success: true, data: created, message: 'Project saved' });
       }
       const existing = existingRes.rows[0];
 

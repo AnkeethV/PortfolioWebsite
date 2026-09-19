@@ -121,7 +121,44 @@ export default async function handler(req, res) {
       );
 
       if (updateRes.rows.length === 0) {
-        return res.status(404).json({ success: false, error: 'Experience entry not found' });
+        // Upsert fallback
+        let order = sort_order;
+        if (order === undefined || order === null) {
+          const maxOrderRes = await query('SELECT COALESCE(MAX(sort_order), 0) + 1 AS next_order FROM experience');
+          order = maxOrderRes.rows[0]?.next_order || 1;
+        }
+
+        let insertRes;
+        const numericId = parseInt(id, 10);
+        if (!isNaN(numericId) && numericId > 0) {
+          try {
+            insertRes = await query(
+              `INSERT INTO experience (id, company, title, start_date, end_date, bullets, sort_order, updated_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+               RETURNING *`,
+              [numericId, company || 'Company', title || 'Title', start_date || '', end_date || 'Present', bulletsJson, order]
+            );
+            try {
+              await query("SELECT setval(pg_get_serial_sequence('experience', 'id'), COALESCE((SELECT MAX(id) FROM experience), 1))");
+            } catch (_) {}
+          } catch (_) {
+            insertRes = null;
+          }
+        }
+
+        if (!insertRes || insertRes.rows.length === 0) {
+          insertRes = await query(
+            `INSERT INTO experience (company, title, start_date, end_date, bullets, sort_order, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, NOW())
+             RETURNING *`,
+            [company || 'Company', title || 'Title', start_date || '', end_date || 'Present', bulletsJson, order]
+          );
+        }
+
+        const created = insertRes.rows[0];
+        created.bullets = typeof created.bullets === 'string' ? JSON.parse(created.bullets) : created.bullets;
+        await syncBackup();
+        return res.status(200).json({ success: true, data: created, message: 'Experience saved' });
       }
 
       const updated = updateRes.rows[0];

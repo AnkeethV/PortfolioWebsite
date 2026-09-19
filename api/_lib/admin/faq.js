@@ -104,7 +104,42 @@ export default async function handler(req, res) {
       );
 
       if (updateRes.rows.length === 0) {
-        return res.status(404).json({ success: false, error: 'FAQ entry not found' });
+        // Upsert fallback
+        let order = sort_order;
+        if (order === undefined || order === null) {
+          const maxOrderRes = await query('SELECT COALESCE(MAX(sort_order), 0) + 1 AS next_order FROM faq');
+          order = maxOrderRes.rows[0]?.next_order || 1;
+        }
+
+        let insertRes;
+        const numericId = parseInt(id, 10);
+        if (!isNaN(numericId) && numericId > 0) {
+          try {
+            insertRes = await query(
+              `INSERT INTO faq (id, question, answer, sort_order, updated_at)
+               VALUES ($1, $2, $3, $4, NOW())
+               RETURNING *`,
+              [numericId, question ? question.trim() : 'Question', answer ? answer.trim() : 'Answer', order]
+            );
+            try {
+              await query("SELECT setval(pg_get_serial_sequence('faq', 'id'), COALESCE((SELECT MAX(id) FROM faq), 1))");
+            } catch (_) {}
+          } catch (_) {
+            insertRes = null;
+          }
+        }
+
+        if (!insertRes || insertRes.rows.length === 0) {
+          insertRes = await query(
+            `INSERT INTO faq (question, answer, sort_order, updated_at)
+             VALUES ($1, $2, $3, NOW())
+             RETURNING *`,
+            [question ? question.trim() : 'Question', answer ? answer.trim() : 'Answer', order]
+          );
+        }
+
+        await syncBackup();
+        return res.status(200).json({ success: true, data: insertRes.rows[0], message: 'FAQ saved' });
       }
 
       await syncBackup();
