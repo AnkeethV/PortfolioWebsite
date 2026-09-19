@@ -176,19 +176,39 @@ export default async function handler(req, res) {
           await query('DELETE FROM experience');
           for (let i = 0; i < experience.length; i++) {
             const exp = experience[i];
-            await query(
-              `INSERT INTO experience (company, title, start_date, end_date, bullets, sort_order)
-               VALUES ($1, $2, $3, $4, $5, $6)`,
-              [
-                exp.company,
-                exp.title,
-                exp.start_date,
-                exp.end_date,
-                JSON.stringify(Array.isArray(exp.bullets) ? exp.bullets : []),
-                exp.sort_order !== undefined ? exp.sort_order : i + 1
-              ]
-            );
+            const numId = exp.id ? parseInt(exp.id, 10) : null;
+            if (numId && !isNaN(numId)) {
+              await query(
+                `INSERT INTO experience (id, company, title, start_date, end_date, bullets, sort_order)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                [
+                  numId,
+                  exp.company,
+                  exp.title,
+                  exp.start_date,
+                  exp.end_date,
+                  JSON.stringify(Array.isArray(exp.bullets) ? exp.bullets : []),
+                  exp.sort_order !== undefined ? exp.sort_order : i + 1
+                ]
+              );
+            } else {
+              await query(
+                `INSERT INTO experience (company, title, start_date, end_date, bullets, sort_order)
+                 VALUES ($1, $2, $3, $4, $5, $6)`,
+                [
+                  exp.company,
+                  exp.title,
+                  exp.start_date,
+                  exp.end_date,
+                  JSON.stringify(Array.isArray(exp.bullets) ? exp.bullets : []),
+                  exp.sort_order !== undefined ? exp.sort_order : i + 1
+                ]
+              );
+            }
           }
+          try {
+            await query("SELECT setval(pg_get_serial_sequence('experience', 'id'), COALESCE((SELECT MAX(id) FROM experience), 1))");
+          } catch (_) {}
         } catch (dbErr) {
           console.warn('DB experience restore failed:', dbErr.message);
         }
@@ -203,38 +223,77 @@ export default async function handler(req, res) {
           for (let i = 0; i < projects.length; i++) {
             const proj = projects[i];
             const tags = Array.isArray(proj.tech_tags) ? proj.tech_tags : [];
-            await query(
-              `INSERT INTO projects (
-                name, description, project_type, domain, other_tools, short_info,
-                tech_tags, thumbnail_url, screenshot1_url, screenshot1_desc,
-                screenshot2_url, screenshot2_desc, video_url, powerbi_url,
-                linkedin_url, github_url, platform_name, external_link,
-                is_visible, sort_order
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`,
-              [
-                proj.name,
-                proj.description,
-                proj.project_type || 'Analytics',
-                proj.domain || null,
-                proj.other_tools || null,
-                proj.short_info || null,
-                JSON.stringify(tags),
-                proj.thumbnail_url || null,
-                proj.screenshot1_url || null,
-                proj.screenshot1_desc || null,
-                proj.screenshot2_url || null,
-                proj.screenshot2_desc || null,
-                proj.video_url || null,
-                proj.powerbi_url || null,
-                proj.linkedin_url || null,
-                proj.github_url || null,
-                proj.platform_name || null,
-                proj.external_link || null,
-                proj.is_visible !== false,
-                proj.sort_order !== undefined ? proj.sort_order : i + 1
-              ]
-            );
+            const numId = proj.id ? parseInt(proj.id, 10) : null;
+            if (numId && !isNaN(numId)) {
+              await query(
+                `INSERT INTO projects (
+                  id, name, description, project_type, domain, other_tools, short_info,
+                  tech_tags, thumbnail_url, screenshot1_url, screenshot1_desc,
+                  screenshot2_url, screenshot2_desc, video_url, powerbi_url,
+                  linkedin_url, github_url, platform_name, external_link,
+                  is_visible, sort_order
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`,
+                [
+                  numId,
+                  proj.name,
+                  proj.description,
+                  proj.project_type || 'Analytics',
+                  proj.domain || null,
+                  proj.other_tools || null,
+                  proj.short_info || null,
+                  JSON.stringify(tags),
+                  proj.thumbnail_url || null,
+                  proj.screenshot1_url || null,
+                  proj.screenshot1_desc || null,
+                  proj.screenshot2_url || null,
+                  proj.screenshot2_desc || null,
+                  proj.video_url || null,
+                  proj.powerbi_url || null,
+                  proj.linkedin_url || null,
+                  proj.github_url || null,
+                  proj.platform_name || null,
+                  proj.external_link || null,
+                  proj.is_visible !== false,
+                  proj.sort_order !== undefined ? proj.sort_order : i + 1
+                ]
+              );
+            } else {
+              await query(
+                `INSERT INTO projects (
+                  name, description, project_type, domain, other_tools, short_info,
+                  tech_tags, thumbnail_url, screenshot1_url, screenshot1_desc,
+                  screenshot2_url, screenshot2_desc, video_url, powerbi_url,
+                  linkedin_url, github_url, platform_name, external_link,
+                  is_visible, sort_order
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`,
+                [
+                  proj.name,
+                  proj.description,
+                  proj.project_type || 'Analytics',
+                  proj.domain || null,
+                  proj.other_tools || null,
+                  proj.short_info || null,
+                  JSON.stringify(tags),
+                  proj.thumbnail_url || null,
+                  proj.screenshot1_url || null,
+                  proj.screenshot1_desc || null,
+                  proj.screenshot2_url || null,
+                  proj.screenshot2_desc || null,
+                  proj.video_url || null,
+                  proj.powerbi_url || null,
+                  proj.linkedin_url || null,
+                  proj.github_url || null,
+                  proj.platform_name || null,
+                  proj.external_link || null,
+                  proj.is_visible !== false,
+                  proj.sort_order !== undefined ? proj.sort_order : i + 1
+                ]
+              );
+            }
           }
+          try {
+            await query("SELECT setval(pg_get_serial_sequence('projects', 'id'), COALESCE((SELECT MAX(id) FROM projects), 1))");
+          } catch (_) {}
         } catch (dbErr) {
           console.warn('DB projects restore failed:', dbErr.message);
         }
@@ -248,15 +307,31 @@ export default async function handler(req, res) {
           await query('DELETE FROM skills');
           for (let i = 0; i < skills.length; i++) {
             const s = skills[i];
-            await query(
-              `INSERT INTO skills (category, value, sort_order) VALUES ($1, $2, $3)`,
-              [
-                (s.category || 'technical').toLowerCase(),
-                s.value,
-                s.sort_order !== undefined ? s.sort_order : i + 1
-              ]
-            );
+            const numId = s.id ? parseInt(s.id, 10) : null;
+            if (numId && !isNaN(numId)) {
+              await query(
+                `INSERT INTO skills (id, category, value, sort_order) VALUES ($1, $2, $3, $4)`,
+                [
+                  numId,
+                  (s.category || 'technical').toLowerCase(),
+                  s.value,
+                  s.sort_order !== undefined ? s.sort_order : i + 1
+                ]
+              );
+            } else {
+              await query(
+                `INSERT INTO skills (category, value, sort_order) VALUES ($1, $2, $3)`,
+                [
+                  (s.category || 'technical').toLowerCase(),
+                  s.value,
+                  s.sort_order !== undefined ? s.sort_order : i + 1
+                ]
+              );
+            }
           }
+          try {
+            await query("SELECT setval(pg_get_serial_sequence('skills', 'id'), COALESCE((SELECT MAX(id) FROM skills), 1))");
+          } catch (_) {}
         } catch (dbErr) {
           console.warn('DB skills restore failed:', dbErr.message);
         }
@@ -270,15 +345,31 @@ export default async function handler(req, res) {
           await query('DELETE FROM faq');
           for (let i = 0; i < faq.length; i++) {
             const f = faq[i];
-            await query(
-              `INSERT INTO faq (question, answer, sort_order) VALUES ($1, $2, $3)`,
-              [
-                f.question,
-                f.answer,
-                f.sort_order !== undefined ? f.sort_order : i + 1
-              ]
-            );
+            const numId = f.id ? parseInt(f.id, 10) : null;
+            if (numId && !isNaN(numId)) {
+              await query(
+                `INSERT INTO faq (id, question, answer, sort_order) VALUES ($1, $2, $3, $4)`,
+                [
+                  numId,
+                  f.question,
+                  f.answer,
+                  f.sort_order !== undefined ? f.sort_order : i + 1
+                ]
+              );
+            } else {
+              await query(
+                `INSERT INTO faq (question, answer, sort_order) VALUES ($1, $2, $3)`,
+                [
+                  f.question,
+                  f.answer,
+                  f.sort_order !== undefined ? f.sort_order : i + 1
+                ]
+              );
+            }
           }
+          try {
+            await query("SELECT setval(pg_get_serial_sequence('faq', 'id'), COALESCE((SELECT MAX(id) FROM faq), 1))");
+          } catch (_) {}
         } catch (dbErr) {
           console.warn('DB faq restore failed:', dbErr.message);
         }
