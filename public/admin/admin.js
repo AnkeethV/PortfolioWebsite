@@ -77,15 +77,17 @@ export function getLocalOverrides() {
   }
 }
 
-export function syncLocalOverrides(partial = {}) {
+export function syncLocalOverrides(partial = {}, isUserAction = false) {
   try {
     const existing = getLocalOverrides() || {};
     const updated = {
       ...existing,
-      ...partial,
-      _has_custom_edits: true,
-      _last_modified: Date.now()
+      ...partial
     };
+    if (isUserAction) {
+      updated._has_custom_edits = true;
+      updated._last_user_edit = Date.now();
+    }
     localStorage.setItem('portfolio_live_overrides', JSON.stringify(updated));
   } catch (_) {}
 }
@@ -190,21 +192,264 @@ async function handleLogout() {
 }
 
 /**
- * 2. Load and Hydrate All Admin Data
+ * 2. Load and Hydrate All Admin Data (with Smart Persistence & Two-Way Sync)
  */
+async function checkDbMode() {
+  try {
+    const res = await fetch('/api/admin/me');
+    if (res.ok) {
+      const data = await res.json();
+      return data.dbMode || 'ephemeral';
+    }
+  } catch (_) {}
+  return 'ephemeral';
+}
+
+function updateDbStatusUI(dbMode) {
+  const badge = document.getElementById('db-status-badge');
+  const badgeText = document.getElementById('db-status-text');
+  const descEl = document.getElementById('db-status-desc');
+  const detailsEl = document.getElementById('db-connection-details');
+
+  const isPostgres = dbMode === 'postgres';
+
+  if (badge && badgeText) {
+    badge.className = `db-badge ${isPostgres ? 'db-badge-postgres' : 'db-badge-ephemeral'}`;
+    badgeText.textContent = isPostgres ? 'Cloud Postgres Active' : 'Ephemeral Storage';
+  }
+
+  if (descEl) {
+    descEl.textContent = isPostgres
+      ? 'Your portfolio is connected to a persistent cloud PostgreSQL database. All edits made here are saved permanently across deployments and container recycles.'
+      : 'Currently running in ephemeral serverless storage mode. Your changes are safely preserved in this browser and synced across tabs, but server-side data in /tmp resets if Vercel restarts cold containers. Add DATABASE_URL to Vercel for permanent cloud storage.';
+  }
+
+  if (detailsEl) {
+    if (isPostgres) {
+      detailsEl.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #10B981;">
+          <span>✔</span>
+          <span>Permanent cloud storage active. Serverless cold boots load your saved live database.</span>
+        </div>
+      `;
+    } else {
+      detailsEl.innerHTML = `
+        <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 14px; font-size: 12.5px; color: #FCD34D;">
+          <strong style="display: block; margin-bottom: 6px; font-size: 13px;">💡 How to enable permanent cloud database (Free in 2 mins):</strong>
+          <ol style="margin-left: 18px; line-height: 1.6;">
+            <li>Create a free PostgreSQL database on <a href="https://neon.tech" target="_blank" rel="noopener noreferrer" style="color: #60A5FA; text-decoration: underline;">Neon.tech</a> or <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" style="color: #60A5FA; text-decoration: underline;">Supabase</a>.</li>
+            <li>Copy the connection string (e.g. <code>postgresql://username:pass@ep-xyz.neon.tech/neondb?sslmode=require</code>).</li>
+            <li>In your Vercel Project Settings &rarr; <strong>Environment Variables</strong>, add <code>DATABASE_URL</code> and paste your connection string.</li>
+            <li>Redeploy. All admin updates will persist permanently in the cloud forever!</li>
+          </ol>
+        </div>
+      `;
+    }
+  }
+}
+
+function showSyncBanner(msg, type = 'info', autoDismiss = 0) {
+  const container = document.getElementById('sync-notification-container');
+  if (!container) return;
+  const isSuccess = type === 'success';
+  container.innerHTML = `
+    <div class="sync-alert-banner ${isSuccess ? 'success' : ''}">
+      <span>${escapeHtml(msg)}</span>
+      <button type="button" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 16px;" onclick="this.parentElement.remove()">✕</button>
+    </div>
+  `;
+  if (autoDismiss > 0) {
+    setTimeout(() => {
+      const banner = container.querySelector('.sync-alert-banner');
+      if (banner) banner.remove();
+    }, autoDismiss);
+  }
+}
+
+async function syncAllLocalDataToServer(silent = false) {
+  const pData = {
+    name: document.getElementById('p-name')?.value || '',
+    title: document.getElementById('p-title')?.value || '',
+    location: document.getElementById('p-location')?.value || '',
+    email: document.getElementById('p-email')?.value || '',
+    linkedin_url: document.getElementById('p-linkedin')?.value || '',
+    github_url: document.getElementById('p-github')?.value || '',
+    resume_url: document.getElementById('p-resume')?.value || '',
+    photo_url: document.getElementById('p-photo')?.value || '',
+    bio: document.getElementById('p-bio')?.value || ''
+  };
+
+  const backupPayload = {
+    personal_info: pData.name ? pData : (getLocalOverrides()?.personal_info || null),
+    experience: allExperiences,
+    projects: allProjects,
+    skills: allSkills,
+    faq: allFaqs
+  };
+
+  try {
+    const res = await fetch('/api/admin/backup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(backupPayload)
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      if (!silent) {
+        showToast('All browser changes successfully synced to server database!');
+        showSyncBanner('✅ Your changes have been synchronized and persisted to the server database.', 'success', 5000);
+      } else {
+        showSyncBanner('✅ Your custom changes were automatically synchronized with the server.', 'success', 5000);
+      }
+      return true;
+    }
+  } catch (err) {
+    console.warn('Error syncing local data to server:', err);
+    if (!silent) showToast('Failed to sync to server database', 'error');
+  }
+  return false;
+}
+
+async function exportFullBackup() {
+  try {
+    showToast('Exporting backup...');
+    let payload = null;
+    try {
+      const res = await fetch('/api/admin/backup');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) payload = json.data;
+      }
+    } catch (_) {}
+
+    if (!payload) {
+      const pData = {
+        name: document.getElementById('p-name')?.value || 'Ankeeth V',
+        title: document.getElementById('p-title')?.value || '',
+        location: document.getElementById('p-location')?.value || '',
+        email: document.getElementById('p-email')?.value || '',
+        linkedin_url: document.getElementById('p-linkedin')?.value || '',
+        github_url: document.getElementById('p-github')?.value || '',
+        resume_url: document.getElementById('p-resume')?.value || '',
+        photo_url: document.getElementById('p-photo')?.value || '',
+        bio: document.getElementById('p-bio')?.value || ''
+      };
+      payload = {
+        personal_info: pData,
+        experience: allExperiences,
+        projects: allProjects,
+        skills: allSkills,
+        faq: allFaqs
+      };
+    }
+
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(payload, null, 2));
+    const a = document.createElement('a');
+    a.setAttribute('href', dataStr);
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.setAttribute('download', `portfolio-backup-${dateStr}.json`);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    showToast('Backup downloaded successfully!');
+  } catch (err) {
+    showToast('Failed to export backup: ' + err.message, 'error');
+  }
+}
+
+async function importFullBackup(file) {
+  if (!file) return;
+  try {
+    showToast('Reading backup file...');
+    const text = await file.text();
+    const backup = JSON.parse(text);
+    const data = backup.data || backup;
+
+    if (!data || typeof data !== 'object') {
+      showToast('Invalid backup file format.', 'error');
+      return;
+    }
+
+    const res = await fetch('/api/admin/backup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (res.ok && result.success) {
+      const overrides = {
+        personal_info: data.personal_info,
+        experience: data.experience,
+        projects: data.projects,
+        skills: getGroupedSkills(data.skills),
+        skills_flat: data.skills,
+        faq: data.faq
+      };
+      syncLocalOverrides(overrides, true);
+
+      if (data.personal_info) hydratePersonalInfo(data.personal_info);
+      if (Array.isArray(data.experience)) {
+        allExperiences = data.experience;
+        renderExperienceList();
+      }
+      if (Array.isArray(data.projects)) {
+        allProjects = data.projects;
+        renderProjectsList();
+      }
+      if (Array.isArray(data.skills)) {
+        allSkills = data.skills;
+        renderSkillsList();
+      }
+      if (Array.isArray(data.faq)) {
+        allFaqs = data.faq;
+        renderFaqList();
+      }
+
+      showToast('All portfolio data successfully restored!');
+      showSyncBanner('✅ Backup successfully imported and synced to both browser and database.', 'success');
+    } else {
+      showToast(result.error || 'Failed to restore backup.', 'error');
+    }
+  } catch (err) {
+    showToast('Error parsing backup file: ' + err.message, 'error');
+  }
+}
+
+function downloadSeedBundle() {
+  try {
+    const projectsPayload = allProjects.map(p => ({
+      ...p,
+      video_url: cleanPlaceholderUrl(p.video_url) || null
+    }));
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(projectsPayload, null, 2));
+    const a = document.createElement('a');
+    a.setAttribute('href', dataStr);
+    a.setAttribute('download', 'projects_backup.json');
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    showToast('projects_backup.json downloaded! Place into data/ and commit.');
+  } catch (err) {
+    showToast('Error generating seed file', 'error');
+  }
+}
+
 async function loadDashboardData() {
   try {
+    const dbMode = await checkDbMode();
+    updateDbStatusUI(dbMode);
+
     const localOverrides = getLocalOverrides();
+    const hasCustomLocalEdits = Boolean(localOverrides && localOverrides._has_custom_edits === true);
 
     // 1. Personal Info
     try {
       const pRes = await fetch(`/api/admin/personal-info?t=${Date.now()}`);
       const pData = await pRes.json();
-      if (pData.success && pData.data) {
-        hydratePersonalInfo(pData.data);
-        syncLocalOverrides({ personal_info: pData.data });
-      } else if (localOverrides && localOverrides.personal_info) {
+      if (hasCustomLocalEdits && localOverrides.personal_info) {
         hydratePersonalInfo(localOverrides.personal_info);
+      } else if (pData.success && pData.data) {
+        hydratePersonalInfo(pData.data);
       }
     } catch (_) {
       if (localOverrides && localOverrides.personal_info) {
@@ -214,11 +459,16 @@ async function loadDashboardData() {
 
     // 2. Load Experience, Projects, Skills, FAQ from admin endpoints
     await Promise.all([
-      loadExperience(),
-      loadProjects(),
-      loadSkills(),
-      loadFaq()
+      loadExperience(hasCustomLocalEdits),
+      loadProjects(hasCustomLocalEdits),
+      loadSkills(hasCustomLocalEdits),
+      loadFaq(hasCustomLocalEdits)
     ]);
+
+    // If localOverrides has custom edits, auto-sync them to the server so the server DB gets updated!
+    if (hasCustomLocalEdits) {
+      await syncAllLocalDataToServer(true);
+    }
   } catch (err) {
     console.error('Error loading dashboard data:', err);
     showToast('Failed to load some dashboard sections.', 'error');
@@ -922,7 +1172,7 @@ async function handleSavePersonalInfo(e) {
     });
     const data = await res.json();
     if (res.ok && data.success) {
-      syncLocalOverrides({ personal_info: data.data || payload });
+      syncLocalOverrides({ personal_info: data.data || payload }, true);
       showToast('Personal info updated successfully!');
     } else {
       showToast(data.error || 'Failed to update personal info', 'error');
@@ -935,21 +1185,26 @@ async function handleSavePersonalInfo(e) {
 /**
  * 4. Experience CRUD
  */
-async function loadExperience() {
+async function loadExperience(hasCustomLocalEdits = false) {
+  const localOverrides = getLocalOverrides();
+  if (hasCustomLocalEdits && localOverrides && Array.isArray(localOverrides.experience) && localOverrides.experience.length > 0) {
+    allExperiences = localOverrides.experience;
+    renderExperienceList();
+    return;
+  }
+
   try {
     const res = await fetch(`/api/admin/experience?t=${Date.now()}`);
     const data = await res.json();
     if (res.ok && data.success && Array.isArray(data.data)) {
       allExperiences = data.data;
       renderExperienceList();
-      syncLocalOverrides({ experience: allExperiences });
       return;
     }
   } catch (err) {
     console.warn('Could not fetch server experience, using local overrides if available:', err);
   }
 
-  const localOverrides = getLocalOverrides();
   if (localOverrides && Array.isArray(localOverrides.experience)) {
     allExperiences = localOverrides.experience;
     renderExperienceList();
@@ -1054,7 +1309,7 @@ async function handleSaveExperience(e) {
       closeModal('modal-experience');
       showToast(id ? 'Experience updated!' : 'Experience added!');
       await loadExperience();
-      syncLocalOverrides({ experience: allExperiences });
+      syncLocalOverrides({ experience: allExperiences }, true);
     } else {
       showToast(data.error || 'Failed to save experience', 'error');
     }
@@ -1071,8 +1326,9 @@ async function deleteExperience(id) {
     const data = await res.json();
     if (res.ok && data.success) {
       showToast('Experience deleted.');
-      await loadExperience();
-      syncLocalOverrides({ experience: allExperiences });
+      allExperiences = allExperiences.filter(e => e.id !== id);
+      renderExperienceList();
+      syncLocalOverrides({ experience: allExperiences }, true);
     } else {
       showToast(data.error || 'Failed to delete experience', 'error');
     }
@@ -1101,7 +1357,7 @@ async function reorderExperience(index, direction) {
       body: JSON.stringify({ items: reorderPayload })
     });
     renderExperienceList();
-    syncLocalOverrides({ experience: allExperiences });
+    syncLocalOverrides({ experience: allExperiences }, true);
     showToast('Order updated');
   } catch (_) {
     showToast('Failed to update order', 'error');
@@ -1111,30 +1367,26 @@ async function reorderExperience(index, direction) {
 /**
  * 5. Projects CRUD
  */
-async function loadProjects() {
+async function loadProjects(hasCustomLocalEdits = false) {
+  const localOverrides = getLocalOverrides();
+  if (hasCustomLocalEdits && localOverrides && Array.isArray(localOverrides.projects) && localOverrides.projects.length > 0) {
+    allProjects = localOverrides.projects;
+    renderProjectsList();
+    return;
+  }
+
   try {
     const res = await fetch(`/api/admin/projects?t=${Date.now()}`);
     const data = await res.json();
     if (res.ok && data.success && Array.isArray(data.data)) {
-      if (data.data.length > 0) {
-        allProjects = data.data;
-      } else {
-        const localOverrides = getLocalOverrides();
-        if (localOverrides && Array.isArray(localOverrides.projects) && localOverrides.projects.length > 0) {
-          allProjects = localOverrides.projects;
-        } else {
-          allProjects = data.data;
-        }
-      }
+      allProjects = data.data;
       renderProjectsList();
-      syncLocalOverrides({ projects: allProjects });
       return;
     }
   } catch (err) {
     console.warn('Could not fetch server projects, using local overrides if available:', err);
   }
 
-  const localOverrides = getLocalOverrides();
   if (localOverrides && Array.isArray(localOverrides.projects)) {
     allProjects = localOverrides.projects;
     renderProjectsList();
@@ -1360,7 +1612,7 @@ async function handleSaveProject(e) {
           allProjects.push(savedProj);
         }
         renderProjectsList();
-        syncLocalOverrides({ projects: allProjects });
+        syncLocalOverrides({ projects: allProjects }, true);
       }
       await loadProjects();
     } else {
@@ -1381,7 +1633,7 @@ async function deleteProject(id) {
       showToast('Project deleted.');
       allProjects = allProjects.filter(p => String(p.id) !== String(id));
       renderProjectsList();
-      syncLocalOverrides({ projects: allProjects });
+      syncLocalOverrides({ projects: allProjects }, true);
       await loadProjects();
     } else {
       showToast(data.error || 'Failed to delete project', 'error');
@@ -1411,7 +1663,7 @@ async function reorderProjects(index, direction) {
       body: JSON.stringify({ items: reorderPayload })
     });
     renderProjectsList();
-    syncLocalOverrides({ projects: allProjects });
+    syncLocalOverrides({ projects: allProjects }, true);
     showToast('Order updated');
   } catch (_) {
     showToast('Failed to update order', 'error');
@@ -1421,21 +1673,26 @@ async function reorderProjects(index, direction) {
 /**
  * 6. Skills CRUD
  */
-async function loadSkills() {
+async function loadSkills(hasCustomLocalEdits = false) {
+  const localOverrides = getLocalOverrides();
+  if (hasCustomLocalEdits && localOverrides && Array.isArray(localOverrides.skills_flat) && localOverrides.skills_flat.length > 0) {
+    allSkills = localOverrides.skills_flat;
+    renderSkillsList();
+    return;
+  }
+
   try {
     const res = await fetch(`/api/admin/skills?t=${Date.now()}`);
     const data = await res.json();
     if (res.ok && data.success && Array.isArray(data.data)) {
       allSkills = data.data;
       renderSkillsList();
-      syncLocalOverrides({ skills: getGroupedSkills(allSkills), skills_flat: allSkills });
       return;
     }
   } catch (err) {
     console.warn('Could not fetch server skills, using local overrides if available:', err);
   }
 
-  const localOverrides = getLocalOverrides();
   if (localOverrides && Array.isArray(localOverrides.skills_flat)) {
     allSkills = localOverrides.skills_flat;
     renderSkillsList();
@@ -1478,7 +1735,7 @@ async function handleAddSkill(cat, valueInput) {
       valueInput.value = '';
       showToast(`Skill added to ${cat}`);
       await loadSkills();
-      syncLocalOverrides({ skills: getGroupedSkills(allSkills), skills_flat: allSkills });
+      syncLocalOverrides({ skills: getGroupedSkills(allSkills), skills_flat: allSkills }, true);
     } else {
       showToast(data.error || 'Failed to add skill', 'error');
     }
@@ -1493,8 +1750,9 @@ async function deleteSkill(id) {
     const data = await res.json();
     if (res.ok && data.success) {
       showToast('Skill removed.');
-      await loadSkills();
-      syncLocalOverrides({ skills: getGroupedSkills(allSkills), skills_flat: allSkills });
+      allSkills = allSkills.filter(s => s.id !== id);
+      renderSkillsList();
+      syncLocalOverrides({ skills: getGroupedSkills(allSkills), skills_flat: allSkills }, true);
     } else {
       showToast(data.error || 'Failed to delete skill', 'error');
     }
@@ -1506,21 +1764,26 @@ async function deleteSkill(id) {
 /**
  * 7. FAQ CRUD
  */
-async function loadFaq() {
+async function loadFaq(hasCustomLocalEdits = false) {
+  const localOverrides = getLocalOverrides();
+  if (hasCustomLocalEdits && localOverrides && Array.isArray(localOverrides.faq) && localOverrides.faq.length > 0) {
+    allFaqs = localOverrides.faq;
+    renderFaqList();
+    return;
+  }
+
   try {
     const res = await fetch(`/api/admin/faq?t=${Date.now()}`);
     const data = await res.json();
     if (res.ok && data.success && Array.isArray(data.data)) {
       allFaqs = data.data;
       renderFaqList();
-      syncLocalOverrides({ faq: allFaqs });
       return;
     }
   } catch (err) {
     console.warn('Could not fetch server FAQ, using local overrides if available:', err);
   }
 
-  const localOverrides = getLocalOverrides();
   if (localOverrides && Array.isArray(localOverrides.faq)) {
     allFaqs = localOverrides.faq;
     renderFaqList();
@@ -1592,7 +1855,7 @@ async function handleSaveFaq(e) {
       closeModal('modal-faq');
       showToast(id ? 'FAQ updated!' : 'FAQ added!');
       await loadFaq();
-      syncLocalOverrides({ faq: allFaqs });
+      syncLocalOverrides({ faq: allFaqs }, true);
     } else {
       showToast(data.error || 'Failed to save FAQ', 'error');
     }
@@ -1609,8 +1872,9 @@ async function deleteFaq(id) {
     const data = await res.json();
     if (res.ok && data.success) {
       showToast('FAQ deleted.');
-      await loadFaq();
-      syncLocalOverrides({ faq: allFaqs });
+      allFaqs = allFaqs.filter(f => f.id !== id);
+      renderFaqList();
+      syncLocalOverrides({ faq: allFaqs }, true);
     } else {
       showToast(data.error || 'Failed to delete FAQ', 'error');
     }
@@ -1639,7 +1903,7 @@ async function reorderFaq(index, direction) {
       body: JSON.stringify({ items: reorderPayload })
     });
     renderFaqList();
-    syncLocalOverrides({ faq: allFaqs });
+    syncLocalOverrides({ faq: allFaqs }, true);
     showToast('Order updated');
   } catch (_) {
     showToast('Failed to update order', 'error');
@@ -1671,7 +1935,11 @@ window.adminApp = {
   deleteSkill,
   openEditFaq,
   deleteFaq,
-  reorderFaq
+  reorderFaq,
+  exportFullBackup,
+  importFullBackup,
+  syncAllLocalDataToServer,
+  downloadSeedBundle
 };
 
 /**
@@ -1684,6 +1952,36 @@ document.addEventListener('DOMContentLoaded', () => {
   // Login & Logout
   const loginForm = document.getElementById('login-form');
   if (loginForm) loginForm.addEventListener('submit', handleLogin);
+
+  // Cloud Database & Backup Controls
+  const btnExportBackup = document.getElementById('btn-export-backup');
+  if (btnExportBackup) btnExportBackup.addEventListener('click', exportFullBackup);
+
+  const btnImportTrigger = document.getElementById('btn-import-backup-trigger');
+  const backupFileInput = document.getElementById('backup-file-input');
+  if (btnImportTrigger && backupFileInput) {
+    btnImportTrigger.addEventListener('click', () => backupFileInput.click());
+    backupFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        importFullBackup(e.target.files[0]);
+        e.target.value = '';
+      }
+    });
+  }
+
+  const btnSyncToServer = document.getElementById('btn-sync-to-server');
+  if (btnSyncToServer) btnSyncToServer.addEventListener('click', () => syncAllLocalDataToServer(false));
+
+  const btnDownloadSeed = document.getElementById('btn-download-seed-json');
+  if (btnDownloadSeed) btnDownloadSeed.addEventListener('click', downloadSeedBundle);
+
+  const dbBadge = document.getElementById('db-status-badge');
+  if (dbBadge) {
+    dbBadge.addEventListener('click', () => {
+      const backupTabBtn = document.querySelector('.admin-tab-btn[data-tab="backup"]');
+      if (backupTabBtn) backupTabBtn.click();
+    });
+  }
 
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);

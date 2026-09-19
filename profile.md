@@ -3,12 +3,12 @@
 ## Personal Info
 
 * Name: Ankeeth V
-* Current Title: Lead Data Analyst & Solutions Architect
-* Location: Bengaluru, Karnataka, India
-* Email: ankeeth.v@gmail.com
-* LinkedIn: https://www.linkedin.com/in/ankeeth-v-
-* GitHub: https://github.com/AnkeethV
-* Bio: Updated bio testing admin capabilities.
+* Current Title: Lead Data Analyst
+* Location: 
+* Email: 
+* LinkedIn: 
+* GitHub: 
+* Bio: Persistent Data Analyst
 
 ## Experience
 
@@ -38,7 +38,7 @@
 ## Projects
 
 * Sales and Finance Analytics — Analyzed historical financial data to produce detailed P&L reports and provided customer- and market-performance analysis versus sales targets. — Tech: Excel — Link: https://github.com/AnkeethV
-* Business360 — E-commerce — Tech: Power BI, SQL, Excel, DAX Studio — Link: https://github.com/AnkeethV
+* Business Insights — AtliQ Hardware is a consumer goods electronics company having operations in various countries. — Tech: Power BI, SQL, Excel, DAX Studio — Link: https://app.powerbi.com
 * AdHoc Analysis — Consumer Goods — Tech: Power BI, SQL — Link: https://github.com/AnkeethV
 * Personal Finance Tracker — Developed a finance tracker to consolidate expenses, income, and investments and provide actionable financial insights. — Tech: ChatGPT, Claude, Antigravity — Link: https://github.com/AnkeethV
 

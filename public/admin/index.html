@@ -48,6 +48,10 @@
       <div class="admin-brand-group">
         <span class="admin-wordmark">Ankeeth V</span>
         <span class="admin-badge">Admin Console</span>
+        <button type="button" id="db-status-badge" class="db-badge db-badge-ephemeral" title="Click to view database connection details" style="border: none; cursor: pointer;">
+          <span class="db-badge-dot"></span>
+          <span id="db-status-text">Checking Database...</span>
+        </button>
       </div>
       <div class="admin-actions">
         <a href="/" target="_blank" rel="noopener noreferrer" class="btn-outline">
@@ -68,10 +72,12 @@
       <button class="admin-tab-btn" data-tab="skills">Skills</button>
       <button class="admin-tab-btn" data-tab="faq">FAQ</button>
       <button class="admin-tab-btn" data-tab="security">Security</button>
+      <button class="admin-tab-btn" data-tab="backup">Cloud & Backups</button>
     </nav>
 
     <!-- Main Content Panels -->
     <main class="admin-content-area">
+      <div id="sync-notification-container"></div>
 
       <!-- Panel 1: Personal Info -->
       <section id="panel-personal-info" class="tab-panel active">
@@ -303,6 +309,85 @@
               Reset Master Password
             </button>
           </form>
+        </div>
+      </section>
+
+      <!-- Panel 7: Cloud Database & Backups -->
+      <section id="panel-backup" class="tab-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Cloud Database & Backups</h2>
+        </div>
+
+        <div class="backup-grid">
+          <!-- Card 1: Live Database Status -->
+          <div class="backup-card">
+            <div>
+              <div class="backup-card-title">
+                <span>🗄️</span>
+                <span>Storage & Database Status</span>
+              </div>
+              <p class="backup-card-desc" id="db-status-desc">
+                Checking your cloud database connection...
+              </p>
+              
+              <div id="db-connection-details" style="margin-bottom: 20px;">
+                <!-- Populated via JavaScript -->
+              </div>
+            </div>
+
+            <div>
+              <button type="button" id="btn-sync-to-server" class="btn-outline" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px;">
+                <span>🔄</span>
+                <span>Push Browser Edits to Server DB</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Card 2: One-Click Full Backup & Restore -->
+          <div class="backup-card">
+            <div>
+              <div class="backup-card-title">
+                <span>💾</span>
+                <span>Complete Backup & Restore</span>
+              </div>
+              <p class="backup-card-desc">
+                Export all your portfolio data (Personal Profile, Experiences, Projects, Skills, and FAQ) into a single standalone JSON file. You can restore this backup anytime across any browser or server.
+              </p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <button type="button" id="btn-export-backup" class="btn-full" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span>⬇️</span>
+                <span>Download Full Backup (JSON)</span>
+              </button>
+              
+              <button type="button" id="btn-import-backup-trigger" class="btn-outline" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span>⬆️</span>
+                <span>Restore Backup File (JSON)</span>
+              </button>
+              <input type="file" id="backup-file-input" accept=".json" style="display: none;">
+            </div>
+          </div>
+
+          <!-- Card 3: Git-Tracked Baseline Seed Sync -->
+          <div class="backup-card">
+            <div>
+              <div class="backup-card-title">
+                <span>📦</span>
+                <span>Permanent Git Baseline</span>
+              </div>
+              <p class="backup-card-desc">
+                Download the updated backup files (<code>projects_backup.json</code>, etc.) to commit directly to your GitHub repository. Once committed, your customized projects and details will become the permanent factory default.
+              </p>
+            </div>
+
+            <div>
+              <button type="button" id="btn-download-seed-json" class="btn-outline" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span>📥</span>
+                <span>Download Seed JSON Bundle</span>
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 

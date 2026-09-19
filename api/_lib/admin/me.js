@@ -1,4 +1,5 @@
 import { verifyToken } from '../auth.js';
+import { isUsingFallback } from '../db.js';
 
 /**
  * GET /api/admin/me
@@ -24,6 +25,7 @@ export default async function handler(req, res) {
 
   return res.status(200).json({
     authenticated: true,
-    user: user.user || 'admin'
+    user: user.user || 'admin',
+    dbMode: isUsingFallback() ? 'ephemeral' : 'postgres'
   });
 }

@@ -221,15 +221,6 @@ function closeLightbox() {
   // Build Action Links
   const actionButtons = [];
 
-  if (safeVideoUrl) {
-    actionButtons.push(`
-      <a href="${escapeHtml(safeVideoUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-secondary" style="display: inline-flex; gap: 8px; align-items: center;">
-        <span>▶ Video Demo</span>
-        ${iconExt}
-      </a>
-    `);
-  }
-
   if (safePowerBiUrl && safePowerBiUrl.toLowerCase() !== 'not applicable') {
     actionButtons.push(`
       <a href="${escapeHtml(safePowerBiUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-primary">

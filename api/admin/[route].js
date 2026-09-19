@@ -8,6 +8,7 @@ import skillsHandler from '../_lib/admin/skills.js';
 import faqHandler from '../_lib/admin/faq.js';
 import resetPasswordHandler from '../_lib/admin/reset-password.js';
 import uploadHandler from '../_lib/admin/upload.js';
+import backupHandler from '../_lib/admin/backup.js';
 import { ensureSeeded } from '../_lib/seed.js';
 
 const handlers = {
@@ -20,7 +21,8 @@ const handlers = {
   'skills': skillsHandler,
   'faq': faqHandler,
   'reset-password': resetPasswordHandler,
-  'upload': uploadHandler
+  'upload': uploadHandler,
+  'backup': backupHandler
 };
 
 /**
