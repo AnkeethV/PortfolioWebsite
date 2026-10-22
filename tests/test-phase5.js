@@ -79,12 +79,11 @@ async function runPhase5Tests() {
   assert.ok(indexContent.includes('property="og:title"'), 'Must include Open Graph title');
   assert.ok(indexContent.includes('<a href="#main-content" class="skip-link"'), 'Must include skip link');
 
-  // All 7 Core Semantic Sections
+  // All Core Semantic Sections
   const requiredLandmarks = [
     'id="navbar"',
     'id="main-content"',
     'id="hero"',
-    'id="highlights"',
     'id="experience"',
     'id="projects"',
     'id="skills"',

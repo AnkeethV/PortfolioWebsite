@@ -13,13 +13,12 @@ async function runPhase6Tests() {
   console.log('====================================================');
 
   // ----------------------------------------------------
-  // Test 1: Verify all 9 Section CSS Files Exist & Have Content
+  // Test 1: Verify Section CSS Files Exist & Have Content
   // ----------------------------------------------------
   console.log('\n[Test 1] Verifying all section stylesheets...');
   const expectedCss = [
     'nav.css',
     'hero.css',
-    'highlights.css',
     'experience.css',
     'projects.css',
     'skills.css',
