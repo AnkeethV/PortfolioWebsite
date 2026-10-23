@@ -25,3 +25,4 @@ Created a website with a chatbot that answers on behalf of me. The website has a
 
 ![Image](Images/Screenshot%202026-10-23%20235914.png)
 
+![Image](Images/Screenshot%202026-10-24%20000745.png)
