@@ -16,7 +16,8 @@
     "test:phase6": "node scripts/run-test.js tests/test-phase6.js",
     "test:phase7": "node scripts/run-test.js tests/test-phase7.js",
     "test:phase8": "node scripts/run-test.js tests/test-phase8.js",
-    "test:phase9": "node scripts/run-test.js tests/test-phase9.js"
+    "test:phase9": "node scripts/run-test.js tests/test-phase9.js",
+    "test:project-types": "node scripts/run-test.js tests/test-project-types.js"
   },
   "keywords": [
     "portfolio",

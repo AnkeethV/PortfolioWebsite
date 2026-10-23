@@ -1186,5 +1186,95 @@ body {
   user-select: all;
 }
 
+/* ----------------------------------------------------
+   10. Project Types Management
+   ---------------------------------------------------- */
+.project-types-box {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+}
+
+.project-types-box.collapsed {
+  display: none;
+}
+
+.project-types-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  min-height: 40px;
+}
+
+.project-type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.project-type-chip:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 2px 6px rgba(242, 183, 5, 0.12);
+}
+
+.project-type-chip-name {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.project-type-chip-count {
+  font-size: 11px;
+  background: rgba(242, 183, 5, 0.15);
+  color: #F2B705;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  font-weight: 700;
+}
+
+.project-type-chip-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+}
+
+.btn-pt-action {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  padding: 3px 5px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: all var(--transition-fast);
+}
+
+.btn-pt-action:hover {
+  color: var(--color-accent);
+  background-color: rgba(242, 183, 5, 0.15);
+}
+
+.btn-pt-delete:hover {
+  color: #EF4444;
+  background-color: rgba(239, 68, 68, 0.15);
+}
+
+
 
 

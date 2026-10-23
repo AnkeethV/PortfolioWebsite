@@ -6,6 +6,7 @@
 // State
 let allExperiences = [];
 let allProjects = [];
+let allProjectTypes = [];
 let allSkills = [];
 let allFaqs = [];
 
@@ -497,10 +498,11 @@ async function loadDashboardData() {
       }
     }
 
-    // 2. Load Experience, Projects, Skills, FAQ from admin endpoints
+    // 2. Load Experience, Projects, Project Types, Skills, FAQ from admin endpoints
     await Promise.all([
       loadExperience(hasCustomLocalEdits),
       loadProjects(hasCustomLocalEdits),
+      loadProjectTypes(hasCustomLocalEdits),
       loadSkills(hasCustomLocalEdits),
       loadFaq(hasCustomLocalEdits)
     ]);
@@ -1508,6 +1510,8 @@ function renderProjectsList() {
   const container = document.getElementById('projects-admin-list');
   if (!container) return;
 
+  renderProjectTypesList();
+
   if (allProjects.length === 0) {
     container.innerHTML = '<p class="text-muted" style="padding: 16px;">No projects listed yet.</p>';
     return;
@@ -1559,7 +1563,7 @@ function openAddProject() {
   document.getElementById('modal-project-title').textContent = 'Add Project';
   document.getElementById('form-project').reset();
   document.getElementById('proj-id').value = '';
-  document.getElementById('proj-type').value = 'Excel';
+  populateProjectTypeSelect();
   document.getElementById('proj-visible-yes').checked = true;
   document.getElementById('proj-visible-no').checked = false;
   clearProjThumb();
@@ -1594,7 +1598,7 @@ function openEditProject(id) {
 
   document.getElementById('modal-project-title').textContent = 'Edit Project';
   document.getElementById('proj-id').value = proj.id;
-  document.getElementById('proj-type').value = proj.project_type || 'Excel';
+  populateProjectTypeSelect(proj.project_type || 'Excel');
   document.getElementById('proj-domain').value = proj.domain || '';
   document.getElementById('proj-other-tools').value = proj.other_tools || '';
   document.getElementById('proj-name').value = proj.name || '';
@@ -1838,6 +1842,330 @@ async function reorderProjects(index, direction) {
     showToast('Order updated');
   } catch (_) {
     showToast('Failed to update order', 'error');
+  }
+}
+
+/**
+ * 5.5 Project Types CRUD
+ */
+async function loadProjectTypes() {
+  const localOverrides = getLocalOverrides();
+  const hasCustomEdits = Boolean(localOverrides && Array.isArray(localOverrides.project_types) && localOverrides.project_types.length > 0);
+  if (hasCustomEdits && localOverrides.project_types) {
+    allProjectTypes = localOverrides.project_types;
+    renderProjectTypesList();
+    populateProjectTypeSelect();
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/admin/project-types?t=${Date.now()}`);
+    const data = await res.json();
+    if (res.ok && data.success && Array.isArray(data.data)) {
+      allProjectTypes = data.data;
+      renderProjectTypesList();
+      populateProjectTypeSelect();
+      return;
+    }
+  } catch (err) {
+    console.warn('Could not fetch server project types, using local overrides if available:', err);
+  }
+
+  if (localOverrides && Array.isArray(localOverrides.project_types)) {
+    allProjectTypes = localOverrides.project_types;
+  } else {
+    allProjectTypes = [
+      { id: 1, name: 'Excel', sort_order: 1 },
+      { id: 2, name: 'Power BI', sort_order: 2 },
+      { id: 3, name: 'Tableau', sort_order: 3 },
+      { id: 4, name: 'Python', sort_order: 4 },
+      { id: 5, name: 'SQL', sort_order: 5 },
+      { id: 6, name: 'Machine Learning', sort_order: 6 },
+      { id: 7, name: 'Data Analytics', sort_order: 7 },
+      { id: 8, name: 'Analytics', sort_order: 8 },
+      { id: 9, name: 'Full Stack', sort_order: 9 },
+      { id: 10, name: 'Other', sort_order: 10 }
+    ];
+  }
+  renderProjectTypesList();
+  populateProjectTypeSelect();
+}
+
+function renderProjectTypesList() {
+  const listEl = document.getElementById('project-types-admin-list');
+  const countBadge = document.getElementById('project-types-count-badge');
+  if (!listEl) return;
+
+  if (countBadge) {
+    countBadge.textContent = `${allProjectTypes.length} type${allProjectTypes.length === 1 ? '' : 's'}`;
+  }
+
+  if (allProjectTypes.length === 0) {
+    listEl.innerHTML = '<span class="text-muted" style="font-size: 13px;">No project types defined. Use "+ Add Type" above.</span>';
+    return;
+  }
+
+  // Calculate usage counts from allProjects
+  const counts = {};
+  allProjects.forEach(p => {
+    if (p.project_type) {
+      const key = p.project_type.trim().toLowerCase();
+      counts[key] = (counts[key] || 0) + 1;
+    }
+  });
+
+  listEl.innerHTML = allProjectTypes.map(pt => {
+    const key = (pt.name || '').trim().toLowerCase();
+    const usage = counts[key] !== undefined ? counts[key] : (pt.project_count || 0);
+    return `
+      <div class="project-type-chip" data-id="${pt.id}">
+        <span class="project-type-chip-name">${escapeHtml(pt.name)}</span>
+        <span class="project-type-chip-count" title="${usage} project${usage === 1 ? '' : 's'} assigned">${usage}</span>
+        <div class="project-type-chip-actions">
+          <button type="button" class="btn-pt-action" title="Edit / Rename '${escapeHtml(pt.name)}'" onclick="window.adminApp.openEditProjectType(${pt.id})">✎</button>
+          <button type="button" class="btn-pt-action btn-pt-delete" title="Delete '${escapeHtml(pt.name)}'" onclick="window.adminApp.deleteProjectType(${pt.id})">✕</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function populateProjectTypeSelect(selectedVal = null) {
+  const select = document.getElementById('proj-type');
+  if (!select) return;
+
+  const currentVal = selectedVal !== null ? selectedVal : select.value;
+  select.innerHTML = '';
+
+  const typesList = allProjectTypes.length > 0
+    ? allProjectTypes.map(t => t.name)
+    : ['Excel', 'Power BI', 'Tableau', 'Python', 'SQL', 'Machine Learning', 'Data Analytics', 'Analytics', 'Full Stack', 'Other'];
+
+  // Ensure currentVal is included even if custom
+  if (currentVal && !typesList.some(t => t.toLowerCase() === currentVal.toLowerCase())) {
+    typesList.push(currentVal);
+  }
+
+  typesList.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    if (currentVal && currentVal.toLowerCase() === name.toLowerCase()) {
+      opt.selected = true;
+    }
+    select.appendChild(opt);
+  });
+
+  if (!select.value && select.options.length > 0) {
+    select.selectedIndex = 0;
+  }
+}
+
+async function handleAddProjectType(nameInput) {
+  const name = (nameInput?.value || '').trim();
+  if (!name) return;
+
+  // Check duplicate client-side
+  if (allProjectTypes.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+    showToast(`Project type "${name}" already exists`, 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/admin/project-types', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      if (nameInput) nameInput.value = '';
+      const newType = data.data || { id: Date.now(), name, sort_order: allProjectTypes.length + 1, project_count: 0 };
+      allProjectTypes.push(newType);
+      renderProjectTypesList();
+      populateProjectTypeSelect();
+      syncLocalOverrides({ project_types: allProjectTypes }, true);
+      showToast(`Project type "${name}" added!`);
+    } else {
+      showToast(data.error || 'Failed to add project type', 'error');
+    }
+  } catch (err) {
+    // Offline local fallback
+    const newType = { id: Date.now(), name, sort_order: allProjectTypes.length + 1, project_count: 0 };
+    allProjectTypes.push(newType);
+    if (nameInput) nameInput.value = '';
+    renderProjectTypesList();
+    populateProjectTypeSelect();
+    syncLocalOverrides({ project_types: allProjectTypes }, true);
+    showToast(`Project type "${name}" added locally!`);
+  }
+}
+
+function openEditProjectType(id) {
+  const pt = allProjectTypes.find(t => String(t.id) === String(id));
+  if (!pt) return;
+
+  const idInput = document.getElementById('pt-id');
+  const nameInput = document.getElementById('pt-name');
+  if (idInput) idInput.value = pt.id;
+  if (nameInput) nameInput.value = pt.name;
+
+  openModal('modal-project-type');
+}
+
+async function handleSaveProjectType(e) {
+  e.preventDefault();
+  const idInput = document.getElementById('pt-id');
+  const nameInput = document.getElementById('pt-name');
+  const submitBtn = document.getElementById('btn-save-project-type');
+
+  const id = idInput?.value;
+  const newName = (nameInput?.value || '').trim();
+  if (!id || !newName) return;
+
+  const ptIndex = allProjectTypes.findIndex(t => String(t.id) === String(id));
+  if (ptIndex === -1) return;
+  const oldName = allProjectTypes[ptIndex].name;
+
+  // Collision check
+  if (allProjectTypes.some(t => String(t.id) !== String(id) && t.name.toLowerCase() === newName.toLowerCase())) {
+    showToast(`Another project type is already named "${newName}"`, 'error');
+    return;
+  }
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving...';
+  }
+
+  try {
+    const res = await fetch('/api/admin/project-types', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: parseInt(id, 10), name: newName })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      allProjectTypes[ptIndex].name = newName;
+
+      // Update associated projects in client memory
+      let updatedCount = 0;
+      allProjects.forEach(p => {
+        if (p.project_type === oldName) {
+          p.project_type = newName;
+          updatedCount++;
+        }
+      });
+
+      renderProjectTypesList();
+      renderProjectsList();
+      populateProjectTypeSelect();
+      syncLocalOverrides({ project_types: allProjectTypes, projects: allProjects }, true);
+      closeModal('modal-project-type');
+      showToast(updatedCount > 0
+        ? `Updated type to "${newName}" (${updatedCount} projects updated)!`
+        : `Project type updated to "${newName}"!`
+      );
+    } else {
+      showToast(data.error || 'Failed to update project type', 'error');
+    }
+  } catch (err) {
+    allProjectTypes[ptIndex].name = newName;
+    allProjects.forEach(p => {
+      if (p.project_type === oldName) p.project_type = newName;
+    });
+    renderProjectTypesList();
+    renderProjectsList();
+    populateProjectTypeSelect();
+    syncLocalOverrides({ project_types: allProjectTypes, projects: allProjects }, true);
+    closeModal('modal-project-type');
+    showToast(`Project type updated locally to "${newName}"!`);
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Save Type';
+    }
+  }
+}
+
+async function deleteProjectType(id) {
+  const pt = allProjectTypes.find(t => String(t.id) === String(id));
+  if (!pt) return;
+
+  const usage = allProjects.filter(p => (p.project_type || '').toLowerCase() === pt.name.toLowerCase()).length;
+  const msg = usage > 0
+    ? `Are you sure you want to delete project type "${pt.name}"?\n${usage} project(s) currently use it and will be changed to "Other".`
+    : `Are you sure you want to delete project type "${pt.name}"?`;
+
+  if (!confirm(msg)) return;
+
+  try {
+    const res = await fetch(`/api/admin/project-types?id=${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      allProjectTypes = allProjectTypes.filter(t => String(t.id) !== String(id));
+
+      // Reassign affected projects to 'Other'
+      allProjects.forEach(p => {
+        if ((p.project_type || '').toLowerCase() === pt.name.toLowerCase()) {
+          p.project_type = 'Other';
+        }
+      });
+
+      renderProjectTypesList();
+      renderProjectsList();
+      populateProjectTypeSelect();
+      syncLocalOverrides({ project_types: allProjectTypes, projects: allProjects }, true);
+      showToast(`Project type "${pt.name}" deleted.`);
+    } else {
+      showToast(data.error || 'Failed to delete project type', 'error');
+    }
+  } catch (err) {
+    allProjectTypes = allProjectTypes.filter(t => String(t.id) !== String(id));
+    allProjects.forEach(p => {
+      if ((p.project_type || '').toLowerCase() === pt.name.toLowerCase()) {
+        p.project_type = 'Other';
+      }
+    });
+    renderProjectTypesList();
+    renderProjectsList();
+    populateProjectTypeSelect();
+    syncLocalOverrides({ project_types: allProjectTypes, projects: allProjects }, true);
+    showToast(`Project type "${pt.name}" deleted locally.`);
+  }
+}
+
+async function quickAddNewProjectType() {
+  const name = prompt('Enter new project type name (e.g. AI / Machine Learning, Tableau):');
+  if (!name || !name.trim()) return;
+  const trimmed = name.trim();
+
+  if (allProjectTypes.some(t => t.name.toLowerCase() === trimmed.toLowerCase())) {
+    populateProjectTypeSelect(trimmed);
+    showToast(`Project type "${trimmed}" is already available.`);
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/admin/project-types', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: trimmed })
+    });
+    const data = await res.json();
+    const newType = (res.ok && data.success && data.data) ? data.data : { id: Date.now(), name: trimmed, sort_order: allProjectTypes.length + 1, project_count: 0 };
+    allProjectTypes.push(newType);
+    renderProjectTypesList();
+    populateProjectTypeSelect(trimmed);
+    syncLocalOverrides({ project_types: allProjectTypes }, true);
+    showToast(`Project type "${trimmed}" added and selected!`);
+  } catch (_) {
+    const newType = { id: Date.now(), name: trimmed, sort_order: allProjectTypes.length + 1, project_count: 0 };
+    allProjectTypes.push(newType);
+    renderProjectTypesList();
+    populateProjectTypeSelect(trimmed);
+    syncLocalOverrides({ project_types: allProjectTypes }, true);
+    showToast(`Project type "${trimmed}" added locally!`);
   }
 }
 
@@ -2178,6 +2506,8 @@ window.adminApp = {
   openEditProject,
   deleteProject,
   reorderProjects,
+  openEditProjectType,
+  deleteProjectType,
   deleteSkill,
   openEditFaq,
   deleteFaq,
@@ -2268,6 +2598,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const formProj = document.getElementById('form-project');
   if (formProj) formProj.addEventListener('submit', handleSaveProject);
+
+  // Project Types form and quick add button
+  const formAddProjectType = document.getElementById('form-add-project-type');
+  if (formAddProjectType) {
+    formAddProjectType.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('new-project-type-input');
+      handleAddProjectType(input);
+    });
+  }
+
+  const formEditProjectType = document.getElementById('form-project-type');
+  if (formEditProjectType) {
+    formEditProjectType.addEventListener('submit', handleSaveProjectType);
+  }
+
+  const btnQuickAddType = document.getElementById('btn-quick-add-type');
+  if (btnQuickAddType) {
+    btnQuickAddType.addEventListener('click', quickAddNewProjectType);
+  }
+
+  const btnToggleProjectTypes = document.getElementById('btn-toggle-project-types');
+  const projectTypesSection = document.getElementById('project-types-section');
+  if (btnToggleProjectTypes && projectTypesSection) {
+    btnToggleProjectTypes.addEventListener('click', () => {
+      projectTypesSection.classList.toggle('collapsed');
+      const isCollapsed = projectTypesSection.classList.contains('collapsed');
+      const textEl = document.getElementById('btn-toggle-project-types-text');
+      if (textEl) {
+        textEl.textContent = isCollapsed ? 'Manage Project Types' : 'Hide Project Types';
+      }
+      if (!isCollapsed) {
+        projectTypesSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
+  }
 
   // Skills Add Forms
   ['technical', 'tools', 'soft'].forEach(cat => {

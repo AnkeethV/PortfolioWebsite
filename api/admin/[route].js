@@ -9,6 +9,7 @@ import faqHandler from '../_lib/admin/faq.js';
 import resetPasswordHandler from '../_lib/admin/reset-password.js';
 import uploadHandler from '../_lib/admin/upload.js';
 import backupHandler from '../_lib/admin/backup.js';
+import projectTypesHandler from '../_lib/admin/project-types.js';
 import { ensureSeeded } from '../_lib/seed.js';
 
 const handlers = {
@@ -22,8 +23,10 @@ const handlers = {
   'faq': faqHandler,
   'reset-password': resetPasswordHandler,
   'upload': uploadHandler,
-  'backup': backupHandler
+  'backup': backupHandler,
+  'project-types': projectTypesHandler
 };
+
 
 /**
  * Consolidated Admin API Router (Vercel Serverless Function)

@@ -95,9 +95,18 @@ CREATE TABLE IF NOT EXISTS admin_settings (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS project_types (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) UNIQUE NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Index for ordering performance
 CREATE INDEX IF NOT EXISTS idx_experience_sort ON experience(sort_order, id);
 CREATE INDEX IF NOT EXISTS idx_projects_sort ON projects(sort_order, id);
 CREATE INDEX IF NOT EXISTS idx_skills_category_sort ON skills(category, sort_order, id);
 CREATE INDEX IF NOT EXISTS idx_faq_sort ON faq(sort_order, id);
+CREATE INDEX IF NOT EXISTS idx_project_types_sort ON project_types(sort_order, id);
+
 

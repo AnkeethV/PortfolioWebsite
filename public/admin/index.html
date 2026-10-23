@@ -207,11 +207,55 @@
       <!-- Panel 3: Projects -->
       <section id="panel-projects" class="tab-panel">
         <div class="panel-header">
-          <h2 class="panel-title">Featured Projects</h2>
-          <button type="button" id="btn-add-project" class="btn-outline">
-            + Add Project
-          </button>
+          <div>
+            <h2 class="panel-title">Featured Projects</h2>
+            <p class="panel-subtitle" style="font-size: var(--text-xs); color: var(--color-text-secondary); margin-top: 4px;">
+              Manage your showcase portfolio projects and configure project types/categories.
+            </p>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button type="button" id="btn-toggle-project-types" class="btn-outline" title="Show or hide Project Types management">
+              <span>🏷️</span>
+              <span id="btn-toggle-project-types-text">Manage Project Types</span>
+            </button>
+            <button type="button" id="btn-add-project" class="btn-outline">
+              + Add Project
+            </button>
+          </div>
         </div>
+
+        <!-- Project Types Management Card -->
+        <div id="project-types-section" class="panel-card project-types-box" style="margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <h3 class="panel-card-title" style="margin: 0; font-size: var(--text-base); font-weight: 700;">
+                  🏷️ Project Types & Categories
+                </h3>
+                <span id="project-types-count-badge" class="badge-pill" style="font-size: 11px; padding: 2px 8px; background: rgba(242, 183, 5, 0.15); color: #F2B705; border-radius: 9999px; font-weight: 600;">
+                  0 types
+                </span>
+              </div>
+              <p style="font-size: var(--text-xs); color: var(--color-text-secondary); margin: 6px 0 0 0;">
+                Add, edit (rename), or delete project categories. Renaming a type automatically updates all associated projects.
+              </p>
+            </div>
+
+            <!-- Add Project Type Form -->
+            <form id="form-add-project-type" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <input type="text" id="new-project-type-input" class="form-input" placeholder="New type (e.g. AI / ML)" required style="padding: 8px 12px; font-size: 13px; width: 190px;">
+              <button type="submit" class="btn-outline" style="padding: 8px 14px; white-space: nowrap;">
+                + Add Type
+              </button>
+            </form>
+          </div>
+
+          <!-- Project Types List Container -->
+          <div id="project-types-admin-list" class="project-types-list">
+            <!-- Dynamically rendered -->
+          </div>
+        </div>
+
         <div id="projects-admin-list">
           <!-- Rendered dynamically -->
         </div>
@@ -452,8 +496,13 @@
 
         <!-- Row 1: Project Type -->
         <div class="form-group">
-          <label for="proj-type" class="form-label">Project Type</label>
-          <select id="proj-type" class="form-input form-select">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label for="proj-type" class="form-label" style="margin-bottom: 0;">Project Type</label>
+            <button type="button" id="btn-quick-add-type" class="btn-link" style="background: none; border: none; color: var(--color-accent); font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 0;">
+              + New Type
+            </button>
+          </div>
+          <select id="proj-type" class="form-input form-select" required>
             <option value="Excel">Excel</option>
             <option value="Power BI">Power BI</option>
             <option value="Tableau">Tableau</option>
@@ -461,6 +510,7 @@
             <option value="SQL">SQL</option>
             <option value="Machine Learning">Machine Learning</option>
             <option value="Data Analytics">Data Analytics</option>
+            <option value="Analytics">Analytics</option>
             <option value="Full Stack">Full Stack</option>
             <option value="Other">Other</option>
           </select>
@@ -735,6 +785,30 @@
         <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
           <button type="button" class="btn-outline modal-close">Cancel</button>
           <button type="submit" class="btn-full" style="width: auto; padding: 10px 24px;">Save FAQ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Project Type Modal (Edit) -->
+  <div id="modal-project-type" class="admin-modal-backdrop">
+    <div class="admin-modal-card" style="max-width: 480px;">
+      <div class="modal-header-bar">
+        <h3 id="modal-project-type-title" class="modal-title">Edit Project Type</h3>
+        <button type="button" class="btn-icon modal-close" aria-label="Close modal">✕</button>
+      </div>
+      <form id="form-project-type">
+        <input type="hidden" id="pt-id">
+        <div class="form-group">
+          <label for="pt-name" class="form-label">Project Type Name</label>
+          <input type="text" id="pt-name" class="form-input" required placeholder="e.g. Power BI, Machine Learning">
+          <p class="form-hint" style="font-size: 11px; color: var(--color-text-secondary); margin-top: 6px;">
+            Renaming this project type will automatically update all existing projects assigned to it.
+          </p>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn-outline modal-close">Cancel</button>
+          <button type="submit" id="btn-save-project-type" class="btn-full" style="width: auto; padding: 10px 24px;">Save Type</button>
         </div>
       </form>
     </div>

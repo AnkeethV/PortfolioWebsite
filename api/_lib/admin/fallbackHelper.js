@@ -126,3 +126,23 @@ export function getFallbackPersonalInfo() {
     photo_url: data.personalInfo?.photo_url || '/assets/placeholder-avatar.svg'
   };
 }
+
+export function getFallbackProjectTypes() {
+  const saved = loadJsonBackup('project_types_backup.json');
+  if (Array.isArray(saved) && saved.length > 0) {
+    return saved;
+  }
+  return [
+    { id: 1, name: 'Excel', sort_order: 1 },
+    { id: 2, name: 'Power BI', sort_order: 2 },
+    { id: 3, name: 'Tableau', sort_order: 3 },
+    { id: 4, name: 'Python', sort_order: 4 },
+    { id: 5, name: 'SQL', sort_order: 5 },
+    { id: 6, name: 'Machine Learning', sort_order: 6 },
+    { id: 7, name: 'Data Analytics', sort_order: 7 },
+    { id: 8, name: 'Analytics', sort_order: 8 },
+    { id: 9, name: 'Full Stack', sort_order: 9 },
+    { id: 10, name: 'Other', sort_order: 10 }
+  ];
+}
+

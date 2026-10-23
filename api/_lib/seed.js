@@ -324,6 +324,39 @@ export async function seedDatabase(force = false) {
       await client.query("SELECT setval(pg_get_serial_sequence('faq', 'id'), COALESCE((SELECT MAX(id) FROM faq), 1))");
     } catch (_) {}
 
+    // 6. Insert Project Types if empty
+    const ptCountRes = await client.query('SELECT COUNT(*) AS count FROM project_types');
+    if (parseInt(ptCountRes.rows[0]?.count || '0', 10) === 0) {
+      const defaultTypes = loadJsonBackup('project_types_backup.json') || [
+        { name: 'Excel', sort_order: 1 },
+        { name: 'Power BI', sort_order: 2 },
+        { name: 'Tableau', sort_order: 3 },
+        { name: 'Python', sort_order: 4 },
+        { name: 'SQL', sort_order: 5 },
+        { name: 'Machine Learning', sort_order: 6 },
+        { name: 'Data Analytics', sort_order: 7 },
+        { name: 'Analytics', sort_order: 8 },
+        { name: 'Full Stack', sort_order: 9 },
+        { name: 'Other', sort_order: 10 }
+      ];
+      for (const pt of defaultTypes) {
+        if (pt.id) {
+          await client.query(
+            'INSERT INTO project_types (id, name, sort_order) VALUES ($1, $2, $3) ON CONFLICT (name) DO NOTHING',
+            [pt.id, pt.name, pt.sort_order || 0]
+          );
+        } else {
+          await client.query(
+            'INSERT INTO project_types (name, sort_order) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING',
+            [pt.name, pt.sort_order || 0]
+          );
+        }
+      }
+      try {
+        await client.query("SELECT setval(pg_get_serial_sequence('project_types', 'id'), COALESCE((SELECT MAX(id) FROM project_types), 1))");
+      } catch (_) {}
+    }
+
     await client.query('COMMIT');
 
     return {
@@ -346,9 +379,42 @@ export async function seedDatabase(force = false) {
 }
 
 /**
+ * Ensures project_types table exists and has initial values
+ */
+export async function ensureProjectTypesSeeded() {
+  try {
+    await initSchema();
+    const res = await query('SELECT COUNT(*) AS count FROM project_types');
+    if (parseInt(res.rows[0]?.count || '0', 10) === 0) {
+      const defaultTypes = loadJsonBackup('project_types_backup.json') || [
+        { name: 'Excel', sort_order: 1 },
+        { name: 'Power BI', sort_order: 2 },
+        { name: 'Tableau', sort_order: 3 },
+        { name: 'Python', sort_order: 4 },
+        { name: 'SQL', sort_order: 5 },
+        { name: 'Machine Learning', sort_order: 6 },
+        { name: 'Data Analytics', sort_order: 7 },
+        { name: 'Analytics', sort_order: 8 },
+        { name: 'Full Stack', sort_order: 9 },
+        { name: 'Other', sort_order: 10 }
+      ];
+      for (const pt of defaultTypes) {
+        await query(
+          'INSERT INTO project_types (name, sort_order) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING',
+          [pt.name, pt.sort_order || 0]
+        );
+      }
+    }
+  } catch (err) {
+    console.warn('Could not seed project_types:', err.message);
+  }
+}
+
+/**
  * Ensures the database is seeded; safe to call on serverless cold boots
  */
 export async function ensureSeeded() {
+  await ensureProjectTypesSeeded();
   const seeded = await isSeeded();
   if (!seeded) {
     return await seedDatabase(false);
@@ -360,5 +426,7 @@ export default {
   initSchema,
   isSeeded,
   seedDatabase,
-  ensureSeeded
+  ensureSeeded,
+  ensureProjectTypesSeeded
 };
+

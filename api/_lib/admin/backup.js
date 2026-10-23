@@ -6,7 +6,8 @@ import {
   getFallbackExperience,
   getFallbackProjects,
   getFallbackSkills,
-  getFallbackFaq
+  getFallbackFaq,
+  getFallbackProjectTypes
 } from './fallbackHelper.js';
 import {
   saveJsonBackup,
@@ -81,6 +82,13 @@ export default async function handler(req, res) {
       } catch (_) {}
       if (faq.length === 0) faq = getFallbackFaq();
 
+      let project_types = [];
+      try {
+        const ptRes = await query('SELECT * FROM project_types ORDER BY sort_order ASC, id ASC');
+        project_types = ptRes.rows;
+      } catch (_) {}
+      if (project_types.length === 0) project_types = getFallbackProjectTypes();
+
       return res.status(200).json({
         success: true,
         exported_at: new Date().toISOString(),
@@ -89,7 +97,8 @@ export default async function handler(req, res) {
           experience,
           projects,
           skills,
-          faq
+          faq,
+          project_types
         }
       });
     }
@@ -97,11 +106,12 @@ export default async function handler(req, res) {
     // 2. POST: Restore full dataset
     if (req.method === 'POST') {
       const backup = req.body?.data || req.body || {};
-      const { personal_info, experience, projects, skills, faq } = backup;
+      const { personal_info, experience, projects, skills, faq, project_types } = backup;
 
       try {
         await initSchema();
       } catch (_) {}
+
 
       // 2a. Restore Personal Info
       if (personal_info && typeof personal_info === 'object') {
@@ -375,6 +385,34 @@ export default async function handler(req, res) {
         }
         saveJsonBackup('faq_backup.json', faq);
         syncFaqToProfileMd(faq);
+      }
+
+      // 2f. Restore Project Types
+      if (Array.isArray(project_types) && project_types.length > 0) {
+        try {
+          await query('DELETE FROM project_types');
+          for (let i = 0; i < project_types.length; i++) {
+            const pt = project_types[i];
+            const numId = pt.id ? parseInt(pt.id, 10) : null;
+            if (numId && !isNaN(numId)) {
+              await query(
+                `INSERT INTO project_types (id, name, sort_order) VALUES ($1, $2, $3)`,
+                [numId, pt.name, pt.sort_order !== undefined ? pt.sort_order : i + 1]
+              );
+            } else {
+              await query(
+                `INSERT INTO project_types (name, sort_order) VALUES ($1, $2)`,
+                [pt.name, pt.sort_order !== undefined ? pt.sort_order : i + 1]
+              );
+            }
+          }
+          try {
+            await query("SELECT setval(pg_get_serial_sequence('project_types', 'id'), COALESCE((SELECT MAX(id) FROM project_types), 1))");
+          } catch (_) {}
+        } catch (dbErr) {
+          console.warn('DB project_types restore failed:', dbErr.message);
+        }
+        saveJsonBackup('project_types_backup.json', project_types);
       }
 
       return res.status(200).json({
